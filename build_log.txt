@@ -1,0 +1,20 @@
+
+> iob-governance@0.0.1 build
+> nest build
+
+[96mprisma.config.ts[0m:[93m4[0m:[93m30[0m - [91merror[0m[90m TS2307: [0mCannot find module 'prisma/config' or its corresponding type declarations.
+
+[7m4[0m import { defineConfig } from "prisma/config";
+[7m [0m [91m                             ~~~~~~~~~~~~~~~[0m
+[96msrc/modules/document/document.controller.ts[0m:[93m14[0m:[93m58[0m - [91merror[0m[90m TS1272: [0mA type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+
+[7m14[0m     async previewDocument(@Body() body: any, @Res() res: Response) {
+[7m  [0m [91m                                                         ~~~~~~~~[0m
+
+  [96msrc/modules/document/document.controller.ts[0m:[93m2[0m:[93m10[0m
+    [7m2[0m import { Response } from 'express';
+    [7m [0m [96m         ~~~~~~~~[0m
+    'Response' was imported here.
+
+Found 2 error(s).
+

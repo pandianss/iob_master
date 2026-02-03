@@ -1,0 +1,168 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DecisionService = exports.ActionType = exports.DecisionStatus = void 0;
+const common_1 = require("@nestjs/common");
+const prisma_service_1 = require("../../common/prisma.service");
+const doa_service_1 = require("../governance/doa.service");
+var DecisionStatus;
+(function (DecisionStatus) {
+    DecisionStatus["DRAFT"] = "DRAFT";
+    DecisionStatus["PENDING_REVIEW"] = "PENDING_REVIEW";
+    DecisionStatus["PENDING_APPROVAL"] = "PENDING_APPROVAL";
+    DecisionStatus["APPROVED"] = "APPROVED";
+    DecisionStatus["ESCALATED"] = "ESCALATED";
+    DecisionStatus["REJECTED"] = "REJECTED";
+})(DecisionStatus || (exports.DecisionStatus = DecisionStatus = {}));
+var ActionType;
+(function (ActionType) {
+    ActionType["RECOMMEND"] = "RECOMMEND";
+    ActionType["REVIEW"] = "REVIEW";
+    ActionType["APPROVE"] = "APPROVE";
+    ActionType["RATIFY"] = "RATIFY";
+    ActionType["ESCALATE"] = "ESCALATE";
+    ActionType["QUERY"] = "QUERY";
+})(ActionType || (exports.ActionType = ActionType = {}));
+let DecisionService = class DecisionService {
+    prisma;
+    doaService;
+    constructor(prisma, doaService) {
+        this.prisma = prisma;
+        this.doaService = doaService;
+    }
+    async create(initiatorPostingId, data, deptContextId, regionContextId, decisionTypeId, functionalScopeId) {
+        let targetPostingId = initiatorPostingId;
+        if (initiatorPostingId === 'mock-ro-posting') {
+            const firstPosting = await this.prisma.posting.findFirst({
+                where: { status: 'ACTIVE' }
+            });
+            if (firstPosting)
+                targetPostingId = firstPosting.id;
+        }
+        const posting = await this.prisma.posting.findUnique({
+            where: { id: targetPostingId },
+            include: { designation: true }
+        });
+        if (!posting || posting.status !== 'ACTIVE') {
+            throw new common_1.ForbiddenException('Invalid or inactive posting');
+        }
+        let authRuleId;
+        if (decisionTypeId && functionalScopeId) {
+            const amount = data?.amount || 0;
+            const rule = await this.doaService.resolveAuthorityBody(decisionTypeId, functionalScopeId, amount);
+            if (rule)
+                authRuleId = rule.id;
+        }
+        return this.prisma.decision.create({
+            data: {
+                initiatorPostingId: targetPostingId,
+                deptContextId,
+                regionContextId,
+                status: DecisionStatus.DRAFT,
+                outcomeData: data,
+                authRuleId,
+            }
+        });
+    }
+    async performAction(decisionId, actorPostingId, action, notes, evidenceRefs) {
+        const decision = await this.prisma.decision.findUnique({
+            where: { id: decisionId },
+            include: { authRule: true }
+        });
+        if (!decision)
+            throw new common_1.BadRequestException('Decision not found');
+        const actor = await this.prisma.posting.findUnique({
+            where: { id: actorPostingId },
+            include: { designation: true }
+        });
+        if (!actor || actor.status !== 'ACTIVE')
+            throw new common_1.ForbiddenException('Invalid actor posting');
+        switch (action) {
+            case ActionType.RECOMMEND:
+                return this.handleRecommend(decision, actor, notes || '');
+            case ActionType.REVIEW:
+                return this.handleReview(decision, actor, notes || '');
+            case ActionType.APPROVE:
+                return this.handleApprove(decision, actor, notes || '');
+            case ActionType.ESCALATE:
+                return this.handleEscalate(decision, actor, notes || '');
+            default:
+                throw new common_1.BadRequestException('Unsupported action');
+        }
+    }
+    async handleRecommend(decision, actor, notes) {
+        if (decision.status !== DecisionStatus.DRAFT) {
+            throw new common_1.BadRequestException('Can only recommend from DRAFT');
+        }
+        return this.updateState(decision.id, actor.id, DecisionStatus.PENDING_REVIEW, { notes });
+    }
+    async handleReview(decision, actor, notes) {
+        if (decision.status !== DecisionStatus.PENDING_REVIEW) {
+            throw new common_1.BadRequestException('Can only review if PENDING_REVIEW');
+        }
+        return this.updateState(decision.id, actor.id, DecisionStatus.PENDING_APPROVAL, { notes });
+    }
+    async handleApprove(decision, actor, notes) {
+        if (decision.status !== DecisionStatus.PENDING_APPROVAL) {
+            throw new common_1.BadRequestException('Can only approve if PENDING_APPROVAL');
+        }
+        if (decision.authRuleId) {
+            const amount = decision.outcomeData?.amount || 0;
+            const validation = await this.doaService.validateAuthority('DESIGNATION', actor.designationId, decision.authRule.decisionTypeId, decision.authRule.functionalScopeId, amount);
+            if (!validation.valid) {
+                throw new common_1.ForbiddenException(`Decision exceeds authority limits: ${validation.reason}`);
+            }
+        }
+        return this.updateState(decision.id, actor.id, DecisionStatus.APPROVED, { notes });
+    }
+    async handleEscalate(decision, actor, notes) {
+        return this.updateState(decision.id, actor.id, DecisionStatus.ESCALATED, { notes });
+    }
+    async updateState(decisionId, actorPostingId, nextStatus, metadata) {
+        return this.prisma.$transaction(async (tx) => {
+            const prevDecision = await tx.decision.findUnique({ where: { id: decisionId } });
+            const decision = await tx.decision.update({
+                where: { id: decisionId },
+                data: { status: nextStatus }
+            });
+            await tx.decisionAudit.create({
+                data: {
+                    decisionId,
+                    actorPostingId,
+                    actionType: 'STATE_CHANGE',
+                    prevState: prevDecision?.status,
+                    newState: nextStatus,
+                }
+            });
+            return decision;
+        });
+    }
+    async findAll() {
+        return this.prisma.decision.findMany({
+            include: {
+                initiatorPosting: {
+                    include: {
+                        user: true,
+                        designation: true,
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+    }
+};
+exports.DecisionService = DecisionService;
+exports.DecisionService = DecisionService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        doa_service_1.DoAService])
+], DecisionService);
+//# sourceMappingURL=decision.service.js.map

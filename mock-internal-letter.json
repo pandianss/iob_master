@@ -1,0 +1,21 @@
+{
+    "templateName": "internal-letter",
+    "data": {
+        "toAddress": "All Regional Managers / Branch Managers",
+        "fromDepartment": "Information Technology Department, Central Office",
+        "referenceNumber": "IT/IOM/2026/001",
+        "date": "03 Feb 2026",
+        "subject": "Implementation of New Document Generation System (DGS)",
+        "bodyContent": "<p>We are pleased to inform that the new <strong>Document Generation System (DGS)</strong> is being rolled out effective immediately.</p><p>This system enables the generation of uniform, bank-grade PDF documents for all office notes, circulars, and committee recommendations. It ensures consistent branding, security markings, and layout standards across the organization.</p><p>All branches and administrative units are requested to start using the system for their proposal submissions.</p>",
+        "signatoryName": "K. Ravi",
+        "signatoryDesignation": "General Manager (IT)",
+        "enclosures": [
+            "User Manual for DGS v1.0",
+            "List of Standard Templates"
+        ],
+        "ccList": [
+            "Executive Director",
+            "Managing Director & CEO"
+        ]
+    }
+}
