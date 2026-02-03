@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { Building2, Users, ShieldCheck, Briefcase } from 'lucide-react';
 
 interface Department {
@@ -86,7 +86,7 @@ export function OrgChart({ data }: OrgChartProps) {
                                 <div className="absolute top-0 left-1/2 -translate-x-1/2 h-px bg-gray-300 w-[calc(100%-12rem)]" style={{ top: -1 }}></div>
                             )}
 
-                            {node.children.map((child, index) => (
+                            {node.children.map((child) => (
                                 <div key={child.id} className="flex flex-col items-center relative">
                                     {/* Connector from horizontal line to child */}
                                     {/* Only if multiple children, we need special connectors.
@@ -135,7 +135,7 @@ export function OrgChart({ data }: OrgChartProps) {
                                 style={{ left: '2rem', right: '2rem' }}></div>
                         )}
 
-                        {node.children.map((child, idx) => (
+                        {node.children.map((child) => (
                             <div key={child.id} className="flex flex-col items-center px-4 relative">
                                 <div className="h-4 w-px bg-gray-300 absolute -top-4"></div>
                                 <TreeRenderer node={child} />
