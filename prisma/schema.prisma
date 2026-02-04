@@ -19,9 +19,68 @@ model Department {
   parentId  String?
   parent    Department?  @relation("OrgHierarchy", fields: [parentId], references: [id])
   children  Department[] @relation("OrgHierarchy")
+
+  // 1. Identity & Legal
+  statutoryBasis         String?
+  establishmentOrderRef  String?
+  dateOfEstablishment    DateTime?
+  
+  // 2. Hierarchy & Lineage
+  geographicalScope      String?
+  peerGroupCode          String?
+  reportingChain         Json?      // Ordered list of parent IDs
+  
+  // 3. Authority & Mandate
+  mandateStatement       String?    @db.Text
+  delegationRef          String?
+  powers                 String[]   @default([])
+  decisionRights         Json?      // Specific rights
+  vetoRights             Json?
+  restrictions           Json?
+  
+  // 4. Functional Ownership
+  policiesOwned          String[]   @default([])
+  processesOwned         String[]   @default([])
+  metricsAccountableFor  String[]   @default([])
+  certificationResponsibility Json?
+
+  // 5. MIS & Data Governance
+  dataRoles              String[]   @default([])
+  sourceSystems          String[]   @default([])
+  misFrequency           String?
+  misSla                 String?
+  dataFreezeTime         String?
+  revisionPolicy         String?
+
+  // 6. Control, Risk & Compliance
+  riskCategory           String?
+  inspectionCycle        String?
+  lastInspectionDate     DateTime?
+  openObservationsCount  Int        @default(0)
+  vigilanceSensitivity   String?    @default("NORMAL")
+  regulatoryTouchpoints  Json?
+
+  // 7. Committee & Escalation
+  linkedCommittees       Json?
+  escalationPath         Json?
+  exceptionThresholds    Json?
+
+  // 8. Obligation & Accountability
+  canReceiveObligations  Boolean    @default(true)
+  canIssueObligations    Boolean    @default(true)
+  obligationCategories   String[]   @default([])
+  defaultConsequence     Json?
+
+  // 10. Audit & Traceability
+  decisionLogRetentionYears Int     @default(10)
+  documentRetentionPolicy   String?
+  auditTrailEnabled         Boolean @default(true)
+  inspectionReplayCapable   Boolean @default(false)
+
   postings  Posting[]
   availabilities UnitAvailability[]
   governanceParams GovernanceParameter[]
+  offices   Office[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -70,6 +129,7 @@ model User {
   name        String
   email       String   @unique
   postings    Posting[]
+  tenures     Tenure[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -347,4 +407,179 @@ model BusinessSnapshot {
   
   @@index([unitId, snapshotDate])
   @@index([snapshotDate])
+}
+
+// --- Refactored Governance Architecture ---
+
+enum OfficeTier {
+  TIER_0_SYSTEM     // System Administrator (Outside Governance)
+  TIER_1_GOVERNANCE // Board, Committees
+  TIER_2_EXECUTIVE  // MD, ED, GMs (Central Office)
+  TIER_3_EXECUTION  // Zonal/Regional Heads, Branch Managers
+}
+
+model Office {
+  id              String       @id @default(uuid())
+  code            String       @unique // e.g., "MD-CEO", "GM-RISK", "BM-ADYAR"
+  name            String       // e.g., "Managing Director & CEO"
+  tier            OfficeTier
+  departmentId    String?      // Link to functional unit if applicable
+  vetoPower       Boolean      @default(false)
+  department      Department?  @relation(fields: [departmentId], references: [id])
+  
+  // Relationships
+  occupants       Tenure[]
+  obligationsOwn  Obligation[] @relation("ObligationOwner")
+  obligationsDue  Obligation[] @relation("ObligationTarget")
+  certifiedMis    MisReport[]  @relation("CertifyingOffice")
+  committeeMemberships CommitteeMembership[] 
+  resolutionsSigned Resolution[]
+  actionPointsAssigned ActionPoint[] @relation("ActionPointAssignee")
+  
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model Tenure {
+  id        String   @id @default(uuid())
+  officeId  String
+  userId    String
+  startDate DateTime
+  endDate   DateTime?
+  status    String   // ACTIVE, PAST, SUSPENDED
+  
+  office    Office   @relation(fields: [officeId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GovernanceCommittee {
+  id          String   @id @default(uuid())
+  name        String   // e.g., "Credit Committee of Board"
+  mandate     String
+  
+  // Relationships
+  members     CommitteeMembership[] 
+  resolutions Resolution[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CommitteeMembership {
+  id            String   @id @default(uuid())
+  committeeId   String
+  committee     GovernanceCommittee @relation(fields: [committeeId], references: [id])
+  officeId      String
+  office        Office   @relation(fields: [officeId], references: [id])
+  role          String   // CHAIR, SECRETARY, MEMBER
+  isVoting      Boolean  @default(true)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Resolution {
+  id              String   @id @default(uuid())
+  committeeId     String
+  committee       GovernanceCommittee @relation(fields: [committeeId], references: [id])
+  content         String
+  type            String   // APPROVAL, REJECTION, DEFERRAL, DIRECTION
+  digitallySignedBy String // Office ID of Chair
+  signerOffice    Office   @relation(fields: [digitallySignedBy], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  actionPoints    ActionPoint[]
+}
+
+model MisMetric {
+  id            String @id @default(uuid())
+  name          String // e.g., "NPA Ratio > 5%"
+  sourceSystem  String // "CBS", "HRMS"
+  owningDeptIds String // Department responsible for definition (comma sep or relation)
+  reports       MisReport[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model MisReport {
+  id              String   @id @default(uuid())
+  metricId        String
+  metric          MisMetric @relation(fields: [metricId], references: [id])
+  value           String
+  period          String   // "Q1-2026"
+  
+  // Certification Loop
+  certifyingOfficeId String 
+  certificationDate  DateTime
+  isException        Boolean
+  
+  // Variance Analysis (Management Control)
+  targetValue     String?
+  variance        String?
+  gapAnalysis     String?  @db.Text
+  correctiveAction String? @db.Text
+  
+  certifyingOffice   Office   @relation("CertifyingOffice", fields: [certifyingOfficeId], references: [id])
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Obligation {
+  id              String   @id @default(uuid())
+  title           String
+  description     String
+  originType      String   // POLICY, COMMITTEE, REGULATOR
+  originId        String?  // ID of the resolution/policy
+  
+  fromOfficeId    String
+  toOfficeId      String
+  
+  deadline        DateTime
+  escalationLevel Int      @default(0)
+  status          String   // PENDING, CERTIFIED, ESCALATED, BREACHED
+  
+  fromOffice      Office   @relation("ObligationOwner", fields: [fromOfficeId], references: [id])
+  toOffice        Office   @relation("ObligationTarget", fields: [toOfficeId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ActionPoint {
+  id              String   @id @default(uuid())
+  resolutionId    String
+  resolution      Resolution @relation(fields: [resolutionId], references: [id])
+  
+  task            String
+  targetDate      DateTime
+  priority        String   // LOW, MEDIUM, HIGH, CRITICAL
+  status          String   @default(" OPEN\) // OPEN, IN_PROGRESS, COMPLETED, OVERDUE
+ 
+ assignedToOfficeId String
+ assignedTo Office @relation(\ActionPointAssignee\, fields: [assignedToOfficeId], references: [id])
+ 
+ reports ActionTakenReport[]
+ 
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+}
+
+model ActionTakenReport {
+ id String @id @default(uuid())
+ actionPointId String
+ actionPoint ActionPoint @relation(fields: [actionPointId], references: [id])
+ 
+ progressNote String
+ completionScale Int @default(0) // 0-100
+ impediments String?
+ 
+ reportedAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
 }

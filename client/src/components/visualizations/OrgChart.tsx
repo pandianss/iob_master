@@ -21,13 +21,16 @@ interface TreeNode extends Department {
 
 export function OrgChart({ data }: OrgChartProps) {
     const tree = useMemo(() => {
-        const idMapping = data.reduce((acc, el, i) => {
+        // Filter out systemic offices that sit outside hierarchy
+        const filteredData = data.filter(d => (d as any).tier !== 'TIER_0_SYSTEM');
+
+        const idMapping = filteredData.reduce((acc, el, i) => {
             acc[el.id] = i;
             return acc;
         }, {} as Record<string, number>);
 
         let root: TreeNode | null = null;
-        const nodes: TreeNode[] = data.map(d => ({ ...d, children: [] }));
+        const nodes: TreeNode[] = filteredData.map(d => ({ ...d, children: [] }));
 
         nodes.forEach(el => {
             if (!el.parentId) {

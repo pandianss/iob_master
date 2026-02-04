@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard,
@@ -8,8 +8,8 @@ import {
     Menu,
     Bell,
     Search,
-    PlusCircle,
-    Calendar
+    Calendar,
+    User
 } from 'lucide-react';
 
 export function Shell() {
@@ -17,9 +17,10 @@ export function Shell() {
     const location = useLocation();
 
     const navigation = [
-        { name: 'Inbox', href: '/', icon: LayoutDashboard },
-        { name: 'New Proposal', href: '/decisions/new', icon: PlusCircle },
-        { name: 'Departments', href: '/departments', icon: FileText },
+        { name: 'Decisions', href: '/decisions', icon: ShieldCheck },
+        { name: 'Units', href: '/departments', icon: FileText },
+        { name: 'Staff', href: '/staff', icon: User }, // Added Staff link
+        { name: 'Offices', href: '/offices', icon: Users },
         { name: 'DoA Rules', href: '/doa', icon: ShieldCheck },
         { name: 'Committees', href: '/committees', icon: Users },
         { name: 'MIS Dashboard', href: '/mis', icon: LayoutDashboard },
@@ -29,6 +30,26 @@ export function Shell() {
         { name: 'Governance Parameters', href: '/governance/parameters', icon: ShieldCheck },
         { name: 'Calendar & Meetings', href: '/calendar', icon: Calendar },
     ];
+
+    const [currentOffice, setCurrentOffice] = useState<any>(null);
+
+    useEffect(() => {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            // Prefer Office Tenure (Governance View) over Posting
+            if (user.user?.tenures && user.user.tenures.length > 0) {
+                setCurrentOffice(user.user.tenures[0].office);
+            } else if (user.user) {
+                // Fallback for visual compatibility if no office assigned yet
+                setCurrentOffice({
+                    name: user.user.name,
+                    code: user.user.postings?.[0]?.designation?.title || 'USER',
+                    tier: 'TIER_3_EXECUTION' // Default context
+                });
+            }
+        }
+    }, []);
 
     return (
         <div className="min-h-screen bg-grad-surface flex">
@@ -85,14 +106,19 @@ export function Shell() {
                             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                         </button>
 
-                        <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm"
-                                style={{ background: 'var(--grad-emphasis)' }}>
-                                U
+                        <div className="flex items-center space-x-3 border-l pl-4 border-gray-200">
+                            <div className="text-right mr-2 hidden md:block">
+                                <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Viewing As</p>
+                                <p className="text-sm font-bold text-gray-800">{currentOffice ? currentOffice.name : 'Loading...'}</p>
+                                {currentOffice && (
+                                    <p className={`text-xs font-medium ${currentOffice.tier === 'TIER_0_SYSTEM' ? 'text-red-600' : 'text-blue-600'}`}>
+                                        {currentOffice.tier === 'TIER_0_SYSTEM' ? 'System Control' : currentOffice.tier?.replace('TIER_', 'Tier ').replace('_', ' ')}
+                                    </p>
+                                )}
                             </div>
-                            <div className="text-sm">
-                                <p className="font-semibold text-gray-900">User Name</p>
-                                <p className="text-xs text-gray-500">Admin</p>
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md ring-2 ring-white"
+                                style={{ background: 'var(--grad-emphasis)' }}>
+                                {currentOffice ? currentOffice.code.substring(0, 2) : 'U'}
                             </div>
                         </div>
                     </div>

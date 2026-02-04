@@ -11,14 +11,15 @@ const common_1 = require("@nestjs/common");
 const pdf_service_1 = require("./pdf.service");
 const template_service_1 = require("./template.service");
 const document_controller_1 = require("./document.controller");
+const document_service_1 = require("./document.service");
 let DocumentModule = class DocumentModule {
 };
 exports.DocumentModule = DocumentModule;
 exports.DocumentModule = DocumentModule = __decorate([
     (0, common_1.Module)({
         controllers: [document_controller_1.DocumentController],
-        providers: [pdf_service_1.PdfService, template_service_1.TemplateService],
-        exports: [pdf_service_1.PdfService, template_service_1.TemplateService],
+        providers: [pdf_service_1.PdfService, template_service_1.TemplateService, document_service_1.DocumentService],
+        exports: [pdf_service_1.PdfService, template_service_1.TemplateService, document_service_1.DocumentService],
     })
 ], DocumentModule);
 //# sourceMappingURL=document.module.js.map

@@ -12,6 +12,25 @@ export class GovernanceService {
         });
     }
 
+    async findAllowedContexts(postingId?: string) {
+        // In a real scenario, filter by postingId -> DoA
+        // For now, return all active DoA Rules as allowed contexts
+        const rules = await this.prisma.doARule.findMany({
+            include: {
+                decisionType: true,
+                functionalScope: true
+            }
+        });
+
+        return rules.map(rule => ({
+            decisionTypeId: rule.decisionTypeId,
+            decisionTypeName: rule.decisionType.name,
+            functionalScopeId: rule.functionalScopeId,
+            functionalScopeName: rule.functionalScope.name,
+            category: rule.decisionType.category || 'General'
+        }));
+    }
+
     async createParameter(data: { code: string; name: string; category: string; segment?: string; unitLevel: string; departmentId?: string }) {
         return this.prisma.governanceParameter.create({ data });
     }

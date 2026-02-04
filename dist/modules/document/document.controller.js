@@ -14,14 +14,32 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DocumentController = void 0;
 const common_1 = require("@nestjs/common");
+const document_service_1 = require("./document.service");
 const pdf_service_1 = require("./pdf.service");
 const template_service_1 = require("./template.service");
 let DocumentController = class DocumentController {
     pdfService;
     templateService;
-    constructor(pdfService, templateService) {
+    documentService;
+    constructor(pdfService, templateService, documentService) {
         this.pdfService = pdfService;
         this.templateService = templateService;
+        this.documentService = documentService;
+    }
+    async downloadDecision(id, res) {
+        try {
+            const pdfBuffer = await this.documentService.generateDecisionInstrument(id);
+            res.set({
+                'Content-Type': 'application/pdf',
+                'Content-Disposition': `attachment; filename="IOB-Instrument-${id.substring(0, 8)}.pdf"`,
+                'Content-Length': pdfBuffer.length,
+            });
+            res.send(pdfBuffer);
+        }
+        catch (error) {
+            console.error('Download Error:', error);
+            res.status(500).json({ message: 'Failed to generate document', error: error.message });
+        }
     }
     async previewDocument(body, res) {
         const { templateName, data } = body;
@@ -46,6 +64,14 @@ let DocumentController = class DocumentController {
 };
 exports.DocumentController = DocumentController;
 __decorate([
+    (0, common_1.Get)('download/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], DocumentController.prototype, "downloadDecision", null);
+__decorate([
     (0, common_1.Post)('preview'),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Res)()),
@@ -56,6 +82,7 @@ __decorate([
 exports.DocumentController = DocumentController = __decorate([
     (0, common_1.Controller)('documents'),
     __metadata("design:paramtypes", [pdf_service_1.PdfService,
-        template_service_1.TemplateService])
+        template_service_1.TemplateService,
+        document_service_1.DocumentService])
 ], DocumentController);
 //# sourceMappingURL=document.controller.js.map

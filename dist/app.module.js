@@ -17,6 +17,7 @@ const governance_module_1 = require("./modules/governance/governance.module");
 const reporting_module_1 = require("./modules/reporting/reporting.module");
 const admin_module_1 = require("./modules/admin/admin.module");
 const document_module_1 = require("./modules/document/document.module");
+const auth_module_1 = require("./modules/auth/auth.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -29,7 +30,8 @@ exports.AppModule = AppModule = __decorate([
             governance_module_1.GovernanceModule,
             reporting_module_1.ReportingModule,
             admin_module_1.AdminModule,
-            document_module_1.DocumentModule
+            document_module_1.DocumentModule,
+            auth_module_1.AuthModule
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

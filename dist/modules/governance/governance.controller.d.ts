@@ -13,6 +13,13 @@ export declare class GovernanceController {
         unitLevel: string;
         departmentId: string | null;
     }[]>;
+    getAllowedContexts(): Promise<{
+        decisionTypeId: string;
+        decisionTypeName: string;
+        functionalScopeId: string;
+        functionalScopeName: string;
+        category: string;
+    }[]>;
     createParameter(body: any): Promise<{
         id: string;
         createdAt: Date;

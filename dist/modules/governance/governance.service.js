@@ -22,6 +22,21 @@ let GovernanceService = class GovernanceService {
             orderBy: { category: 'asc' }
         });
     }
+    async findAllowedContexts(postingId) {
+        const rules = await this.prisma.doARule.findMany({
+            include: {
+                decisionType: true,
+                functionalScope: true
+            }
+        });
+        return rules.map(rule => ({
+            decisionTypeId: rule.decisionTypeId,
+            decisionTypeName: rule.decisionType.name,
+            functionalScopeId: rule.functionalScopeId,
+            functionalScopeName: rule.functionalScope.name,
+            category: rule.decisionType.category || 'General'
+        }));
+    }
     async createParameter(data) {
         return this.prisma.governanceParameter.create({ data });
     }

@@ -10,15 +10,48 @@ async function main() {
     // Level 1: Central Office (Root)
     const unitCO = await prisma.department.upsert({
         where: { code: 'CO' },
-        update: {},
-        create: { code: 'CO', name: 'Central Office', type: 'ADMINISTRATIVE', subType: 'CO' },
+        update: {
+            statutoryBasis: 'Banking Regulation Act, 1949',
+            mandateStatement: 'Supreme administrative and policy-making body of Indian Overseas Bank. Responsible for pan-India operations and regulatory compliance.',
+            geographicalScope: 'PAN_INDIA',
+            powers: ['POLICY_FORMULATION', 'EXECUTIVE_OVERSIGHT', 'BUDGET_APPROVAL'],
+            dataRoles: ['GOVERNANCE_OWNER', 'AGGREGATOR'],
+            riskCategory: 'SYSTEMIC',
+            inspectionCycle: 'ANNUAL',
+            auditTrailEnabled: true
+        },
+        create: {
+            code: 'CO',
+            name: 'Central Office',
+            type: 'ADMINISTRATIVE',
+            subType: 'CO',
+            statutoryBasis: 'Banking Regulation Act, 1949',
+            mandateStatement: 'Supreme administrative and policy-making body of Indian Overseas Bank.',
+            geographicalScope: 'PAN_INDIA',
+            powers: ['POLICY_FORMULATION', 'EXECUTIVE_OVERSIGHT']
+        },
     });
 
     // Level 2: Functional Departments under CO
     const deptCredit = await prisma.department.upsert({
         where: { code: 'CREDIT' },
-        update: { parentId: unitCO.id },
-        create: { code: 'CREDIT', name: 'Credit Department', type: 'FUNCTIONAL', subType: 'DEPT', parentId: unitCO.id },
+        update: {
+            parentId: unitCO.id,
+            mandateStatement: 'Formulation of Credit Policy, Sanction of High-Value Loans, and Monitoring of Asset Quality.',
+            powers: ['SANCTION', 'RECOMMEND', 'VETO'],
+            policiesOwned: ['Loan Policy', 'NPA Management Framework'],
+            riskCategory: 'HIGH',
+            vigilanceSensitivity: 'CRITICAL'
+        },
+        create: {
+            code: 'CREDIT',
+            name: 'Credit Department',
+            type: 'FUNCTIONAL',
+            subType: 'DEPT',
+            parentId: unitCO.id,
+            mandateStatement: 'Formulation of Credit Policy and Sanction of High-Value Loans.',
+            powers: ['SANCTION', 'RECOMMEND']
+        },
     });
 
     const deptIT = await prisma.department.upsert({
@@ -36,8 +69,21 @@ async function main() {
     // Level 2: Regional Office (Administrative Unit under CO)
     const unitROChennai = await prisma.department.upsert({
         where: { code: 'RO-CHENNAI' },
-        update: { parentId: unitCO.id },
-        create: { code: 'RO-CHENNAI', name: 'Regional Office - Chennai', type: 'ADMINISTRATIVE', subType: 'RO', parentId: unitCO.id },
+        update: {
+            parentId: unitCO.id,
+            geographicalScope: 'REGIONAL',
+            mandateStatement: 'Supervision of branches in Chennai region and execution of CO policies.',
+            powers: ['EXECUTE', 'MONITOR'],
+            inspectionCycle: 'RISK_BASED'
+        },
+        create: {
+            code: 'RO-CHENNAI',
+            name: 'Regional Office - Chennai',
+            type: 'ADMINISTRATIVE',
+            subType: 'RO',
+            parentId: unitCO.id,
+            mandateStatement: 'Supervision of branches in Chennai region.'
+        },
     });
 
     // Level 3: Branch (Administrative Unit under RO)
@@ -47,12 +93,14 @@ async function main() {
         create: { code: 'BR-ADYAR', name: 'Adyar Branch', type: 'EXECUTIVE', subType: 'BRANCH', parentId: unitROChennai.id },
     });
 
-    // Dummy ADMIN dept for existing references (optional, can alias to CO)
+    // Dummy ADMIN dept -> Facilities
     const deptAdmin = await prisma.department.upsert({
         where: { code: 'ADMIN' },
-        update: { parentId: unitCO.id },
-        create: { code: 'ADMIN', name: 'Administration', type: 'FUNCTIONAL', subType: 'DEPT', parentId: unitCO.id },
+        update: { name: 'Facilities Management' },
+        create: { code: 'ADMIN', name: 'Facilities Management', type: 'FUNCTIONAL', subType: 'DEPT', parentId: unitCO.id },
     });
+
+
 
     console.log('Creating Regions (Legacy/Geographic)...');
     const regHO = await prisma.region.upsert({
@@ -165,7 +213,107 @@ async function main() {
         }
     });
 
-    // --- 5. DoA Rules ---
+    // --- 7. Governance & Offices Refactor ---
+    console.log('Seeding Governance Entities...');
+
+    // 7.1 Committees
+    const commBoard = await prisma.governanceCommittee.upsert({
+        where: { id: 'COMMITTEE-BOARD' }, // Using fixed IDs for ease of reference if possible, or upsert by name if unique field exists. Name not unique in schema? Schema has no unique on name. Creating usually.
+        update: {},
+        create: { name: 'Board of Directors', mandate: 'Supreme Governance Body' },
+    });
+    const commACB = await prisma.governanceCommittee.create({
+        data: { name: 'Audit Committee of Board (ACB)', mandate: 'Financial Oversight' }
+    });
+
+    // 7.0 System Administrator (Tier 0)
+    const officeSysAdmin = await prisma.office.upsert({
+        where: { code: 'SYS-ADMIN' },
+        update: {},
+        create: { code: 'SYS-ADMIN', name: 'System Administrator', tier: 'TIER_0_SYSTEM', vetoPower: true }
+    });
+
+    // Map System Admin to SYS-ADMIN Office
+    await prisma.tenure.create({
+        data: {
+            officeId: officeSysAdmin.id,
+            userId: superUser.id,
+            startDate: new Date(),
+            status: 'ACTIVE'
+        }
+    });
+
+    // 7.2 Offices (Tier 1 - Governance)
+    const officeChair = await prisma.office.upsert({
+        where: { code: 'CHAIRMAN' },
+        update: {},
+        create: { code: 'CHAIRMAN', name: 'Chairman of the Board', tier: 'TIER_1_GOVERNANCE', vetoPower: true }
+    });
+
+    // 7.3 Offices (Tier 2 - Executive)
+    const officeMD = await prisma.office.upsert({
+        where: { code: 'MD-CEO' },
+        update: {},
+        create: { code: 'MD-CEO', name: 'Managing Director & CEO', tier: 'TIER_2_EXECUTIVE', vetoPower: true }
+    });
+
+    const officeGMCredit = await prisma.office.upsert({
+        where: { code: 'GM-CREDIT' },
+        update: {},
+        create: {
+            code: 'GM-CREDIT',
+            name: 'General Manager (Credit)',
+            tier: 'TIER_2_EXECUTIVE',
+            departmentId: deptCredit.id
+        }
+    });
+
+    // 7.4 Offices (Tier 3 - Execution)
+    const officeRMChennai = await prisma.office.upsert({
+        where: { code: 'RM-CHENNAI' },
+        update: {},
+        create: {
+            code: 'RM-CHENNAI',
+            name: 'Regional Head - Chennai',
+            tier: 'TIER_3_EXECUTION',
+            departmentId: unitROChennai.id
+        }
+    });
+
+    const officeBMAdyar = await prisma.office.upsert({
+        where: { code: 'BM-ADYAR' },
+        update: {},
+        create: {
+            code: 'BM-ADYAR',
+            name: 'Branch Manager - Adyar',
+            tier: 'TIER_3_EXECUTION',
+            departmentId: unitBranchAdyar.id
+        }
+    });
+
+    // 7.5 Tenures (Mapping Users to Offices)
+    // Map Rajiv Malhotra (GM) to GM Credit Office
+    await prisma.tenure.create({
+        data: {
+            officeId: officeGMCredit.id,
+            userId: userGM.id,
+            startDate: new Date(),
+            status: 'ACTIVE'
+        }
+    });
+
+    // Map System Admin to Chairman (for demo purposes) - or leave empty?
+    // Let's map Admin to MD for now to give power.
+    await prisma.tenure.create({
+        data: {
+            officeId: officeMD.id,
+            userId: superUser.id,
+            startDate: new Date(),
+            status: 'ACTIVE'
+        }
+    });
+
+
     console.log('Creating DoA Rules...');
 
     // Create dummy Decision Type for seeding

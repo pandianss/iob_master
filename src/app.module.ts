@@ -9,6 +9,7 @@ import { GovernanceModule } from './modules/governance/governance.module';
 import { ReportingModule } from './modules/reporting/reporting.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { DocumentModule } from './modules/document/document.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { DocumentModule } from './modules/document/document.module';
     GovernanceModule,
     ReportingModule,
     AdminModule,
-    DocumentModule
+    DocumentModule,
+    AuthModule
   ],
   controllers: [AppController],
   providers: [AppService],

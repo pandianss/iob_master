@@ -54,7 +54,7 @@ export declare class DecisionService {
     private handleApprove;
     private handleEscalate;
     private updateState;
-    findAll(): Promise<({
+    findAll(officeId?: string): Promise<({
         initiatorPosting: {
             designation: {
                 id: string;
@@ -84,6 +84,20 @@ export declare class DecisionService {
             validTo: Date | null;
             status: string;
         };
+        authRule: {
+            id: string;
+            authorityBodyType: string;
+            authorityBodyId: string;
+            decisionTypeId: string;
+            functionalScopeId: string;
+            limitMin: Prisma.Decimal | null;
+            limitMax: Prisma.Decimal | null;
+            currency: string;
+            requiresEvidence: boolean;
+            isEscalationMandatory: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
     } & {
         id: string;
         createdAt: Date;

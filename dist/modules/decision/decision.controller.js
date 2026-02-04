@@ -26,8 +26,8 @@ let DecisionController = class DecisionController {
     async performAction(id, body) {
         return this.decisionService.performAction(id, body.actorPostingId, body.action, body.notes, body.evidenceRefs);
     }
-    async findAll() {
-        return this.decisionService.findAll();
+    async findAll(officeId) {
+        return this.decisionService.findAll(officeId);
     }
 };
 exports.DecisionController = DecisionController;
@@ -48,8 +48,9 @@ __decorate([
 ], DecisionController.prototype, "performAction", null);
 __decorate([
     (0, common_1.Get)(),
+    __param(0, (0, common_1.Query)('officeId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], DecisionController.prototype, "findAll", null);
 exports.DecisionController = DecisionController = __decorate([

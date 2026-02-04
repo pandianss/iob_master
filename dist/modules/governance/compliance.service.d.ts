@@ -23,26 +23,26 @@ export declare class ComplianceService {
         createdAt: Date;
         updatedAt: Date;
         status: string;
+        escalationLevel: number;
         controlId: string;
         triggerEvent: string;
-        escalationLevel: number;
     }>;
     escalateObservation(observationId: string): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
         status: string;
+        escalationLevel: number;
         controlId: string;
         triggerEvent: string;
-        escalationLevel: number;
     }>;
     resolveObservation(observationId: string, resolutionData: any): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
         status: string;
+        escalationLevel: number;
         controlId: string;
         triggerEvent: string;
-        escalationLevel: number;
     }>;
 }

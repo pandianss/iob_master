@@ -145,15 +145,28 @@ let DecisionService = class DecisionService {
             return decision;
         });
     }
-    async findAll() {
+    async findAll(officeId) {
         return this.prisma.decision.findMany({
+            where: officeId ? {
+                initiatorPosting: {
+                    user: {
+                        tenures: {
+                            some: {
+                                officeId: officeId,
+                                status: 'ACTIVE'
+                            }
+                        }
+                    }
+                }
+            } : {},
             include: {
                 initiatorPosting: {
                     include: {
                         user: true,
                         designation: true,
                     }
-                }
+                },
+                authRule: true
             },
             orderBy: { createdAt: 'desc' }
         });

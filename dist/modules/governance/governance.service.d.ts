@@ -13,6 +13,13 @@ export declare class GovernanceService {
         unitLevel: string;
         departmentId: string | null;
     }[]>;
+    findAllowedContexts(postingId?: string): Promise<{
+        decisionTypeId: string;
+        decisionTypeName: string;
+        functionalScopeId: string;
+        functionalScopeName: string;
+        category: string;
+    }[]>;
     createParameter(data: {
         code: string;
         name: string;

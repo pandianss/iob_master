@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Put, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Put, Param, Delete } from '@nestjs/common';
 import { AdminService } from './admin.service';
 
 @Controller('admin')
@@ -19,6 +19,11 @@ export class AdminController {
     @Put('departments/:id')
     updateDept(@Param('id') id: string, @Body() body: any) {
         return this.adminService.updateDepartment(id, body);
+    }
+
+    @Delete('departments/:id')
+    deleteDept(@Param('id') id: string) {
+        return this.adminService.deleteDepartment(id);
     }
 
     // Designations
@@ -43,9 +48,24 @@ export class AdminController {
         return this.adminService.assignPosting(body);
     }
 
+    @Get('users')
+    getUsers() {
+        return this.adminService.getUsers();
+    }
+
+    @Post('tenures')
+    assignTenure(@Body() body: any) {
+        return this.adminService.assignTenure(body);
+    }
+
     // Rules
     @Post('doa-rules')
     createRule(@Body() body: any) {
         return this.adminService.createDoARule(body);
+    }
+
+    @Get('system-user')
+    getSystemUser() {
+        return this.adminService.getSystemUser();
     }
 }

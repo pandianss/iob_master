@@ -23,6 +23,9 @@ let GovernanceController = class GovernanceController {
     getParameters() {
         return this.governanceService.getParameters();
     }
+    getAllowedContexts() {
+        return this.governanceService.findAllowedContexts();
+    }
     createParameter(body) {
         return this.governanceService.createParameter(body);
     }
@@ -40,6 +43,12 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], GovernanceController.prototype, "getParameters", null);
+__decorate([
+    (0, common_1.Get)('allowed-contexts'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], GovernanceController.prototype, "getAllowedContexts", null);
 __decorate([
     (0, common_1.Post)('parameters'),
     __param(0, (0, common_1.Body)()),

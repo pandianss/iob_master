@@ -11,6 +11,11 @@ export class GovernanceController {
         return this.governanceService.getParameters();
     }
 
+    @Get('allowed-contexts')
+    getAllowedContexts() {
+        return this.governanceService.findAllowedContexts();
+    }
+
     @Post('parameters')
     createParameter(@Body() body: any) {
         return this.governanceService.createParameter(body);

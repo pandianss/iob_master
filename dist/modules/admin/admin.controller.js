@@ -29,6 +29,9 @@ let AdminController = class AdminController {
     updateDept(id, body) {
         return this.adminService.updateDepartment(id, body);
     }
+    deleteDept(id) {
+        return this.adminService.deleteDepartment(id);
+    }
     createDesg(body) {
         return this.adminService.createDesignation(body);
     }
@@ -41,8 +44,17 @@ let AdminController = class AdminController {
     assignPosting(body) {
         return this.adminService.assignPosting(body);
     }
+    getUsers() {
+        return this.adminService.getUsers();
+    }
+    assignTenure(body) {
+        return this.adminService.assignTenure(body);
+    }
     createRule(body) {
         return this.adminService.createDoARule(body);
+    }
+    getSystemUser() {
+        return this.adminService.getSystemUser();
     }
 };
 exports.AdminController = AdminController;
@@ -67,6 +79,13 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "updateDept", null);
+__decorate([
+    (0, common_1.Delete)('departments/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "deleteDept", null);
 __decorate([
     (0, common_1.Post)('designations'),
     __param(0, (0, common_1.Body)()),
@@ -95,12 +114,31 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "assignPosting", null);
 __decorate([
+    (0, common_1.Get)('users'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getUsers", null);
+__decorate([
+    (0, common_1.Post)('tenures'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "assignTenure", null);
+__decorate([
     (0, common_1.Post)('doa-rules'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "createRule", null);
+__decorate([
+    (0, common_1.Get)('system-user'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getSystemUser", null);
 exports.AdminController = AdminController = __decorate([
     (0, common_1.Controller)('admin'),
     __metadata("design:paramtypes", [admin_service_1.AdminService])

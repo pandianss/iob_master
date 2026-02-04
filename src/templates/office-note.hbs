@@ -1,63 +1,116 @@
 <div class="office-note">
-    <h2 style="text-align: center; text-decoration: underline; text-transform: uppercase;">Office Note</h2>
+    <!-- Concentrated Document Info -->
+    <div style="text-align: right; margin-bottom: 5px; font-size: 8pt; color: #999;">
+        INSTRUMENT REF: {{refNumber}} | STATUS: {{status}}
+    </div>
 
-    <table style="width: 100%; margin-bottom: 20px; font-size: 11pt; border-collapse: collapse;">
-        <tr>
-            <td style="width: 15%; font-weight: bold;">To:</td>
-            <td style="width: 85%;">{{toAuthority}}</td>
+    <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #0056b3; padding-bottom: 10px;">
+        <h2 style="margin: 0; text-transform: uppercase; letter-spacing: 2px; color: #0056b3;">{{instrumentType}}</h2>
+        <div style="font-size: 10pt; color: #666; margin-top: 5px;">(Management Instrument for Governing Behavioral
+            Steering)</div>
+    </div>
+
+    <!-- Stakeholder Accountability Matrix -->
+    <table style="width: 100%; margin-bottom: 25px; font-size: 9pt; border-collapse: collapse;">
+        <tr style="background: #f8f9fa;">
+            <th style="padding: 10px; border: 1px solid #ddd; text-align: left; width: 15%;">Role</th>
+            <th style="padding: 10px; border: 1px solid #ddd; text-align: left; width: 45%;">Designation / Office</th>
+            <th style="padding: 10px; border: 1px solid #ddd; text-align: left; width: 40%;">Responsibility Context</th>
         </tr>
         <tr>
-            <td style="font-weight: bold;">From:</td>
-            <td>{{fromDepartment}}</td>
+            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Initiator</td>
+            <td style="padding: 10px; border: 1px solid #ddd;">{{initiatorName}} ({{initiatorDesignation}})</td>
+            <td style="padding: 10px; border: 1px solid #ddd; color: #666;">Proposal and Due Diligence</td>
         </tr>
         <tr>
-            <td style="font-weight: bold;">Subject:</td>
-            <td style="font-weight: bold;">{{subject}}</td>
+            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Reviewer</td>
+            <td style="padding: 10px; border: 1px solid #ddd;">{{reviewerName}} ({{reviewerCode}})</td>
+            <td style="padding: 10px; border: 1px solid #ddd; color: #666;">Validity and Policy Alignment check</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Approver</td>
+            <td style="padding: 10px; border: 1px solid #ddd;">{{approverName}} ({{approverCode}})</td>
+            <td style="padding: 10px; border: 1px solid #ddd; color: #666; font-weight: bold;">Sanctioning Authority
+                [Final Accountability]</td>
+        </tr>
+    </table>
+
+    <table style="width: 100%; margin-bottom: 25px; font-size: 11pt; border-collapse: collapse;">
+        <tr>
+            <td style="width: 18%; font-weight: bold; padding: 10px; border: 1px solid #eee; background: #fafafa;">
+                Subject:</td>
+            <td
+                style="font-weight: bold; padding: 10px; border: 1px solid #eee; text-transform: uppercase; color: #333;">
+                {{subject}}</td>
         </tr>
     </table>
 
     <div class="note-body">
-        <h3>1. Proposal</h3>
-        <p>{{proposalText}}</p>
+        <section style="margin-bottom: 25px; text-align: justify;">
+            <h3 class="section-header"
+                style="border-left: 4px solid #0056b3; padding-left: 10px; font-size: 11pt; text-transform: uppercase; color: #0056b3;">
+                I. Proposal Rationale & Context</h3>
+            <p style="white-space: pre-wrap; font-size: 10.5pt; line-height: 1.6;">{{justification}}</p>
+        </section>
 
-        <h3>2. Justification</h3>
-        <p>{{justificationText}}</p>
+        <section style="margin-bottom: 25px;">
+            <h3 class="section-header"
+                style="border-left: 4px solid #0056b3; padding-left: 10px; font-size: 11pt; text-transform: uppercase; color: #0056b3;">
+                II. Financial Parameters</h3>
+            <div
+                style="background: #f1f5f9; border: 1px solid #e2e8f0; padding: 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #475569; font-weight: 600;">Sanctioned / Exposure Value:</span>
+                <span style="font-weight: 800; font-size: 14pt; color: #0056b3;">{{amount}}</span>
+            </div>
+        </section>
 
-        <h3>3. Financial Implications</h3>
-        <table style="width: 100%; border: 1px solid #333; border-collapse: collapse; margin: 10px 0;">
-            <tr style="background-color: #f0f0f0;">
-                <th style="border: 1px solid #333; padding: 5px; text-align: left;">Item</th>
-                <th style="border: 1px solid #333; padding: 5px; text-align: right;">Amount (INR)</th>
-            </tr>
-            <tr>
-                <td style="border: 1px solid #333; padding: 5px;">{{expenseItem}}</td>
-                <td style="border: 1px solid #333; padding: 5px; text-align: right;">{{expenseAmount}}</td>
-            </tr>
-            <tr>
-                <td style="border: 1px solid #333; padding: 5px; font-weight: bold;">Total</td>
-                <td style="border: 1px solid #333; padding: 5px; text-align: right; font-weight: bold;">
-                    {{expenseAmount}}</td>
-            </tr>
-        </table>
+        <section style="margin-bottom: 25px;">
+            <h3 class="section-header"
+                style="border-left: 4px solid #d32f2f; padding-left: 10px; font-size: 11pt; text-transform: uppercase; color: #d32f2f;">
+                III. Management Steering & Steering Quality Tests</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <tr>
+                    <td
+                        style="width: 30%; font-weight: bold; padding: 12px; border: 1px solid #fee2e2; background: #fef2f2;">
+                        Expected Impact</td>
+                    <td style="padding: 12px; border: 1px solid #fee2e2; font-size: 10pt;">{{expectedImpact}}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold; padding: 12px; border: 1px solid #fee2e2; background: #fef2f2;">
+                        Variance Analysis</td>
+                    <td style="padding: 12px; border: 1px solid #fee2e2; font-size: 10pt;">{{gapAnalysis}}</td>
+                </tr>
+                <tr style="border: 2px solid #d32f2f;">
+                    <td
+                        style="font-weight: bold; padding: 12px; border-right: 1px solid #d32f2f; background: #d32f2f; color: #fff;">
+                        Mandated Action</td>
+                    <td style="padding: 12px; font-weight: bold; color: #d32f2f; font-size: 11pt; background: #fff;">
+                        {{correctiveAction}}</td>
+                </tr>
+            </table>
+        </section>
 
-        <h3>4. Recommendation</h3>
-        <p>The proposal is recommended for approval as it is within the delegated powers of the authority.</p>
+        <section style="margin-bottom: 25px;">
+            <h3 class="section-header"
+                style="border-left: 4px solid #0056b3; padding-left: 10px; font-size: 11pt; text-transform: uppercase; color: #0056b3;">
+                IV. Governance Traceability</h3>
+            <div style="background: #fff; border: 1px solid #eee; padding: 10px; border-radius: 4px;">
+                <ul style="padding-left: 20px; margin: 0;">
+                    {{#each circulars}}
+                    <li style="margin-bottom: 5px; font-size: 9pt;">Guideline Trace: <strong>{{this}}</strong></li>
+                    {{/each}}
+                    {{#unless circulars.length}}
+                    <li style="color: #999; font-style: italic; font-size: 9pt;">No guideline markers recorded.</li>
+                    {{/unless}}
+                </ul>
+            </div>
+        </section>
     </div>
 
-    <div class="signatures" style="margin-top: 50px; display: flex; justify-content: space-between;">
-        <div class="initiator">
-            <p>Initiated By:</p>
-            <br><br>
-            <strong>{{initiatorName}}</strong><br>
-            {{initiatorDesignation}}
-        </div>
-
-        <div class="approver" style="text-align: right;">
-            <p>Approved By:</p>
-            <br><br>
-            <strong>{{approverName}}</strong><br>
-            {{approverDesignation}}<br>
-            Date: ________________
-        </div>
+    <!-- Final Authority Footing -->
+    <div
+        style="margin-top: 50px; border-top: 1px solid #eee; padding-top: 20px; font-size: 9pt; text-align: center; color: #777;">
+        This document is an electronically recorded instrument of Indian Overseas Bank.
+        Accountability is pinned to the office codes listed in the Stakeholder Matrix.
     </div>
 </div>

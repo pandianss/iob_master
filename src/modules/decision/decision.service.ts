@@ -168,15 +168,28 @@ export class DecisionService {
         });
     }
 
-    async findAll() {
+    async findAll(officeId?: string) {
         return this.prisma.decision.findMany({
+            where: officeId ? {
+                initiatorPosting: {
+                    user: {
+                        tenures: {
+                            some: {
+                                officeId: officeId,
+                                status: 'ACTIVE'
+                            }
+                        }
+                    }
+                }
+            } : {},
             include: {
                 initiatorPosting: {
                     include: {
                         user: true,
                         designation: true,
                     }
-                }
+                },
+                authRule: true
             },
             orderBy: { createdAt: 'desc' }
         });
