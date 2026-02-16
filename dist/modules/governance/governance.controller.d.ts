@@ -53,4 +53,21 @@ export declare class GovernanceController {
         unitLevel: string;
         departmentId: string | null;
     }>;
+    createContext(body: {
+        decisionTypeName: string;
+        functionalScopeName: string;
+    }): Promise<{
+        id: string;
+        authorityBodyType: string;
+        authorityBodyId: string;
+        decisionTypeId: string;
+        functionalScopeId: string;
+        limitMin: import("@prisma/client/runtime/library").Decimal | null;
+        limitMax: import("@prisma/client/runtime/library").Decimal | null;
+        currency: string;
+        requiresEvidence: boolean;
+        isEscalationMandatory: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
 }

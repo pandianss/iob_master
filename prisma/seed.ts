@@ -7,73 +7,14 @@ async function main() {
     // --- 1. Organization Masters ---
     console.log('Creating Organization Hierarchy...');
 
-    // Level 1: Central Office (Root)
-    const unitCO = await prisma.department.upsert({
-        where: { code: 'CO' },
-        update: {
-            statutoryBasis: 'Banking Regulation Act, 1949',
-            mandateStatement: 'Supreme administrative and policy-making body of Indian Overseas Bank. Responsible for pan-India operations and regulatory compliance.',
-            geographicalScope: 'PAN_INDIA',
-            powers: ['POLICY_FORMULATION', 'EXECUTIVE_OVERSIGHT', 'BUDGET_APPROVAL'],
-            dataRoles: ['GOVERNANCE_OWNER', 'AGGREGATOR'],
-            riskCategory: 'SYSTEMIC',
-            inspectionCycle: 'ANNUAL',
-            auditTrailEnabled: true
-        },
-        create: {
-            code: 'CO',
-            name: 'Central Office',
-            type: 'ADMINISTRATIVE',
-            subType: 'CO',
-            statutoryBasis: 'Banking Regulation Act, 1949',
-            mandateStatement: 'Supreme administrative and policy-making body of Indian Overseas Bank.',
-            geographicalScope: 'PAN_INDIA',
-            powers: ['POLICY_FORMULATION', 'EXECUTIVE_OVERSIGHT']
-        },
-    });
-
-    // Level 2: Functional Departments under CO
-    const deptCredit = await prisma.department.upsert({
-        where: { code: 'CREDIT' },
-        update: {
-            parentId: unitCO.id,
-            mandateStatement: 'Formulation of Credit Policy, Sanction of High-Value Loans, and Monitoring of Asset Quality.',
-            powers: ['SANCTION', 'RECOMMEND', 'VETO'],
-            policiesOwned: ['Loan Policy', 'NPA Management Framework'],
-            riskCategory: 'HIGH',
-            vigilanceSensitivity: 'CRITICAL'
-        },
-        create: {
-            code: 'CREDIT',
-            name: 'Credit Department',
-            type: 'FUNCTIONAL',
-            subType: 'DEPT',
-            parentId: unitCO.id,
-            mandateStatement: 'Formulation of Credit Policy and Sanction of High-Value Loans.',
-            powers: ['SANCTION', 'RECOMMEND']
-        },
-    });
-
-    const deptIT = await prisma.department.upsert({
-        where: { code: 'IT' },
-        update: { parentId: unitCO.id },
-        create: { code: 'IT', name: 'Information Technology', type: 'FUNCTIONAL', subType: 'DEPT', parentId: unitCO.id },
-    });
-
-    const deptHR = await prisma.department.upsert({
-        where: { code: 'HR' },
-        update: { parentId: unitCO.id },
-        create: { code: 'HR', name: 'Human Resources', type: 'FUNCTIONAL', subType: 'DEPT', parentId: unitCO.id },
-    });
-
-    // Level 2: Regional Office (Administrative Unit under CO)
+    // Level 1: Regional Office (Root Unit for the entire platform)
     const unitROChennai = await prisma.department.upsert({
         where: { code: 'RO-CHENNAI' },
         update: {
-            parentId: unitCO.id,
+            parentId: null, // Root
             geographicalScope: 'REGIONAL',
-            mandateStatement: 'Supervision of branches in Chennai region and execution of CO policies.',
-            powers: ['EXECUTE', 'MONITOR'],
+            mandateStatement: 'Supreme administrative authority for the region. Coordination between policy and execution.',
+            powers: ['EXECUTE', 'MONITOR', 'SANCTION_REGIONAL'],
             inspectionCycle: 'RISK_BASED'
         },
         create: {
@@ -81,10 +22,34 @@ async function main() {
             name: 'Regional Office - Chennai',
             type: 'ADMINISTRATIVE',
             subType: 'RO',
-            parentId: unitCO.id,
+            parentId: null,
             mandateStatement: 'Supervision of branches in Chennai region.'
         },
     });
+
+    // Level 3: RO Functional Departments (Under RO Chennai)
+    const roDepts = [
+        { code: 'RO-CH-CREDIT', name: 'RO Chennai - Credit', subType: 'DEPT' },
+        { code: 'RO-CH-RECOVERY', name: 'RO Chennai - Recovery & NPA', subType: 'DEPT' },
+        { code: 'RO-CH-RETAIL', name: 'RO Chennai - Retail & MSME', subType: 'DEPT' },
+        { code: 'RO-CH-AGRI', name: 'RO Chennai - Agri & FI', subType: 'DEPT' },
+        { code: 'RO-CH-PLANNING', name: 'RO Chennai - Planning & Development', subType: 'DEPT' },
+        { code: 'RO-CH-INSPECTION', name: 'RO Chennai - Inspection & Audit', subType: 'DEPT' },
+        { code: 'RO-CH-HR', name: 'RO Chennai - HR & Admin', subType: 'DEPT' },
+        { code: 'RO-CH-IT', name: 'RO Chennai - IT & Digital', subType: 'DEPT' },
+    ];
+
+    for (const dept of roDepts) {
+        await prisma.department.upsert({
+            where: { code: dept.code },
+            update: { parentId: unitROChennai.id },
+            create: {
+                ...dept,
+                type: 'FUNCTIONAL',
+                parentId: unitROChennai.id
+            }
+        });
+    }
 
     // Level 3: Branch (Administrative Unit under RO)
     const unitBranchAdyar = await prisma.department.upsert({
@@ -93,73 +58,79 @@ async function main() {
         create: { code: 'BR-ADYAR', name: 'Adyar Branch', type: 'EXECUTIVE', subType: 'BRANCH', parentId: unitROChennai.id },
     });
 
-    // Dummy ADMIN dept -> Facilities
+    // Facilities (Mapped to RO for consistency)
     const deptAdmin = await prisma.department.upsert({
         where: { code: 'ADMIN' },
-        update: { name: 'Facilities Management' },
-        create: { code: 'ADMIN', name: 'Facilities Management', type: 'FUNCTIONAL', subType: 'DEPT', parentId: unitCO.id },
+        update: { name: 'Facilities Management', parentId: unitROChennai.id },
+        create: { code: 'ADMIN', name: 'Facilities Management', type: 'FUNCTIONAL', subType: 'DEPT', parentId: unitROChennai.id },
     });
 
-
-
-    console.log('Creating Regions (Legacy/Geographic)...');
-    const regHO = await prisma.region.upsert({
-        where: { code: 'HO' },
-        update: {},
-        create: { code: 'HO', name: 'Head Office', status: 'ACTIVE' },
-    });
-
-    const regRODelhi = await prisma.region.upsert({
-        where: { code: 'RO-DEL' },
-        update: {},
-        create: { code: 'RO-DEL', name: 'Regional Office - Delhi', status: 'ACTIVE' },
+    console.log('Creating Region Master Pivot...');
+    const regPrimary = await prisma.region.upsert({
+        where: { code: 'RO-CH' },
+        update: { updatedAt: new Date() },
+        create: {
+            code: 'RO-CH',
+            name: 'Chennai Regional Office',
+            nameHindi: 'चेन्नई क्षेत्रीय कार्यालय',
+            nameTamil: 'சென்னை மண்டல அலுவலகம்',
+            status: 'ACTIVE'
+        },
     });
 
     // --- 2. Designations ---
     console.log('Creating Designations...');
     const desGM = await prisma.designation.upsert({
-        where: { title: 'General Manager' },
+        where: { title_rank: { title: 'General Manager', rank: 1 } },
         update: {},
-        create: { title: 'General Manager', rank: 1, roleAbstraction: 'EXECUTIVE' },
+        create: { title: 'General Manager', rank: 1 },
     });
 
     const desDGM = await prisma.designation.upsert({
-        where: { title: 'Deputy General Manager' },
+        where: { title_rank: { title: 'Deputy General Manager', rank: 2 } },
         update: {},
-        create: { title: 'Deputy General Manager', rank: 2, roleAbstraction: 'SENIOR_MGMT' },
+        create: { title: 'Deputy General Manager', rank: 2 },
     });
 
     const desAGM = await prisma.designation.upsert({
-        where: { title: 'Asst. General Manager' },
+        where: { title_rank: { title: 'Asst. General Manager', rank: 3 } },
         update: {},
-        create: { title: 'Asst. General Manager', rank: 3, roleAbstraction: 'MIDDLE_MGMT' },
+        create: { title: 'Asst. General Manager', rank: 3 },
     });
 
     const desCM = await prisma.designation.upsert({
-        where: { title: 'Chief Manager' },
+        where: { title_rank: { title: 'Chief Manager', rank: 4 } },
         update: {},
-        create: { title: 'Chief Manager', rank: 4, roleAbstraction: 'OPERATIONAL' },
+        create: { title: 'Chief Manager', rank: 4 },
     });
 
     const desMgr = await prisma.designation.upsert({
-        where: { title: 'Manager' },
+        where: { title_rank: { title: 'Manager', rank: 5 } },
         update: {},
-        create: { title: 'Manager', rank: 5, roleAbstraction: 'OPERATIONAL' },
+        create: { title: 'Manager', rank: 5 },
     });
 
-    // --- 3. Functional Scopes ---
+    // --- 3. Functional Scopes (Standardized to Departments) ---
     console.log('Creating Functional Scopes...');
-    const scopeCreditSanction = await prisma.functionalScope.upsert({
-        where: { code: 'CREDIT_SANCTION' },
-        update: {},
-        create: { code: 'CREDIT_SANCTION', name: 'Credit Sanction' },
-    });
+    const scopes = [
+        { code: 'CREDIT_SANCTION', name: 'Credit & Sanctions' },
+        { code: 'RECOVERY_NPA', name: 'Recovery & Monitoring' },
+        { code: 'RETAIL_MSME', name: 'Retail Lending' },
+        { code: 'AGRI_FI', name: 'Agri & Financial Inclusion' },
+        { code: 'PLANNING_STRATEGY', name: 'Planning & Strategy' },
+        { code: 'HR_ADMIN', name: 'Human Resources & Admin' },
+        { code: 'IT_DIGITAL', name: 'IT & Digital Banking' },
+        { code: 'INSPECTION_AUDIT', name: 'Inspection & Audit' }
+    ];
 
-    const scopeITProcure = await prisma.functionalScope.upsert({
-        where: { code: 'IT_PROCURE' },
-        update: {},
-        create: { code: 'IT_PROCURE', name: 'IT Assets Procurement' },
-    });
+    const scopeMap: any = {};
+    for (const s of scopes) {
+        scopeMap[s.code] = await prisma.functionalScope.upsert({
+            where: { code: s.code },
+            update: { name: s.name },
+            create: s,
+        });
+    }
 
     // --- 4. Users & Postings (Including Super User) ---
     console.log('Creating Users...');
@@ -167,7 +138,7 @@ async function main() {
     // Super User
     const superUser = await prisma.user.upsert({
         where: { identityRef: 'EMP00000' },
-        update: {},
+        update: { updatedAt: new Date() },
         create: { identityRef: 'EMP00000', name: 'System Administrator', email: 'admin@iob.in' },
     });
     // Give Super User a posting in ADMIN-HO as GM
@@ -175,39 +146,42 @@ async function main() {
         data: {
             userId: superUser.id,
             deptId: deptAdmin.id,
-            regionId: regHO.id,
+            regionId: regPrimary.id,
             designationId: desGM.id,
             status: 'ACTIVE'
         }
     });
 
-    // Executive (GM Credit)
+    // Executive (GM Credit) - Now Focalized on RO
     const userGM = await prisma.user.upsert({
         where: { identityRef: 'EMP10001' },
-        update: {},
+        update: { updatedAt: new Date() },
         create: { identityRef: 'EMP10001', name: 'Rajiv Malhotra', email: 'gm.credit@iob.in' },
     });
+
+    const roCredit = await prisma.department.findUnique({ where: { code: 'RO-CH-CREDIT' } });
+
     await prisma.posting.create({
         data: {
             userId: userGM.id,
-            deptId: deptCredit.id,
-            regionId: regHO.id,
+            deptId: roCredit!.id,
+            regionId: regPrimary.id,
             designationId: desGM.id,
             status: 'ACTIVE'
         }
     });
 
-    // Operational (CM Credit)
+    // Operational (CM Credit) - Now Focalized on RO
     const userCM = await prisma.user.upsert({
         where: { identityRef: 'EMP20005' },
-        update: {},
+        update: { updatedAt: new Date() },
         create: { identityRef: 'EMP20005', name: 'Anita Desai', email: 'cm.credit.ho@iob.in' },
     });
     await prisma.posting.create({
         data: {
             userId: userCM.id,
-            deptId: deptCredit.id,
-            regionId: regHO.id,
+            deptId: roCredit!.id,
+            regionId: regPrimary.id,
             designationId: desCM.id,
             status: 'ACTIVE'
         }
@@ -217,72 +191,46 @@ async function main() {
     console.log('Seeding Governance Entities...');
 
     // 7.1 Committees
-    const commBoard = await prisma.governanceCommittee.upsert({
-        where: { id: 'COMMITTEE-BOARD' }, // Using fixed IDs for ease of reference if possible, or upsert by name if unique field exists. Name not unique in schema? Schema has no unique on name. Creating usually.
-        update: {},
-        create: { name: 'Board of Directors', mandate: 'Supreme Governance Body' },
-    });
-    const commACB = await prisma.governanceCommittee.create({
-        data: { name: 'Audit Committee of Board (ACB)', mandate: 'Financial Oversight' }
+    const commRO = await prisma.governanceCommittee.upsert({
+        where: { id: 'COMMITTEE-RO' },
+        update: { updatedAt: new Date() },
+        create: { id: 'COMMITTEE-RO', name: 'Regional Management Committee', mandate: 'Regional Oversight & Decisioning' },
     });
 
     // 7.0 System Administrator (Tier 0)
     const officeSysAdmin = await prisma.office.upsert({
         where: { code: 'SYS-ADMIN' },
-        update: {},
+        update: { updatedAt: new Date() },
         create: { code: 'SYS-ADMIN', name: 'System Administrator', tier: 'TIER_0_SYSTEM', vetoPower: true }
     });
 
-    // Map System Admin to SYS-ADMIN Office
-    await prisma.tenure.create({
-        data: {
-            officeId: officeSysAdmin.id,
-            userId: superUser.id,
-            startDate: new Date(),
-            status: 'ACTIVE'
-        }
-    });
 
-    // 7.2 Offices (Tier 1 - Governance)
-    const officeChair = await prisma.office.upsert({
-        where: { code: 'CHAIRMAN' },
-        update: {},
-        create: { code: 'CHAIRMAN', name: 'Chairman of the Board', tier: 'TIER_1_GOVERNANCE', vetoPower: true }
-    });
-
-    // 7.3 Offices (Tier 2 - Executive)
-    const officeMD = await prisma.office.upsert({
-        where: { code: 'MD-CEO' },
-        update: {},
-        create: { code: 'MD-CEO', name: 'Managing Director & CEO', tier: 'TIER_2_EXECUTIVE', vetoPower: true }
-    });
-
-    const officeGMCredit = await prisma.office.upsert({
-        where: { code: 'GM-CREDIT' },
-        update: {},
-        create: {
-            code: 'GM-CREDIT',
-            name: 'General Manager (Credit)',
-            tier: 'TIER_2_EXECUTIVE',
-            departmentId: deptCredit.id
-        }
-    });
-
-    // 7.4 Offices (Tier 3 - Execution)
+    // 7.4 Offices (Tier 3 - Execution: RO and Branches)
     const officeRMChennai = await prisma.office.upsert({
-        where: { code: 'RM-CHENNAI' },
-        update: {},
+        where: { code: 'RO-CHENNAI-HEAD' },
+        update: { updatedAt: new Date() },
         create: {
-            code: 'RM-CHENNAI',
+            code: 'RO-CHENNAI-HEAD',
             name: 'Regional Head - Chennai',
             tier: 'TIER_3_EXECUTION',
             departmentId: unitROChennai.id
         }
     });
 
+    const officeGMCredit = await prisma.office.upsert({
+        where: { code: 'GM-CREDIT' },
+        update: { updatedAt: new Date() },
+        create: {
+            code: 'GM-CREDIT',
+            name: 'General Manager (Credit)',
+            tier: 'TIER_2_EXECUTIVE',
+            departmentId: roCredit!.id
+        }
+    });
+
     const officeBMAdyar = await prisma.office.upsert({
         where: { code: 'BM-ADYAR' },
-        update: {},
+        update: { updatedAt: new Date() },
         create: {
             code: 'BM-ADYAR',
             name: 'Branch Manager - Adyar',
@@ -292,35 +240,52 @@ async function main() {
     });
 
     // 7.5 Tenures (Mapping Users to Offices)
-    // Map Rajiv Malhotra (GM) to GM Credit Office
+    // Map Rajiv Malhotra (GM) to Regional Head Office for demo
     await prisma.tenure.create({
         data: {
-            officeId: officeGMCredit.id,
+            officeId: officeRMChennai.id,
             userId: userGM.id,
             startDate: new Date(),
             status: 'ACTIVE'
         }
     });
 
-    // Map System Admin to Chairman (for demo purposes) - or leave empty?
-    // Let's map Admin to MD for now to give power.
-    await prisma.tenure.create({
-        data: {
-            officeId: officeMD.id,
-            userId: superUser.id,
-            startDate: new Date(),
-            status: 'ACTIVE'
-        }
-    });
 
+
+    console.log('Resetting DoA Rules...');
+    await prisma.doARule.deleteMany({});
 
     console.log('Creating DoA Rules...');
 
-    // Create dummy Decision Type for seeding
-    const decisionType = await prisma.decisionType.upsert({
-        where: { code: 'APPROVE' },
-        update: {},
-        create: { code: 'APPROVE', name: 'Approval', category: 'ADMIN' },
+    // Decision Types
+    const typeSanc = await prisma.decisionType.upsert({
+        where: { code: 'ADMIN_SANC' },
+        update: { updatedAt: new Date() },
+        create: { code: 'ADMIN_SANC', name: 'Administrative Sanction', category: 'ADMIN' },
+    });
+
+    const typeFin = await prisma.decisionType.upsert({
+        where: { code: 'FIN_CONC' },
+        update: { updatedAt: new Date() },
+        create: { code: 'FIN_CONC', name: 'Financial Concession', category: 'FINANCIAL' },
+    });
+
+    const typeDev = await prisma.decisionType.upsert({
+        where: { code: 'POLICY_DEV' },
+        update: { updatedAt: new Date() },
+        create: { code: 'POLICY_DEV', name: 'Policy Deviation', category: 'POLICY' },
+    });
+
+    const typeExp = await prisma.decisionType.upsert({
+        where: { code: 'SPEC_EXP' },
+        update: { updatedAt: new Date() },
+        create: { code: 'SPEC_EXP', name: 'Special Expenditure', category: 'ADMIN' },
+    });
+
+    const typeHR = await prisma.decisionType.upsert({
+        where: { code: 'HR_ACTION' },
+        update: { updatedAt: new Date() },
+        create: { code: 'HR_ACTION', name: 'Human Resource Action', category: 'HR' },
     });
 
     // CM Credit can Sanction up to 1 Crore
@@ -328,8 +293,8 @@ async function main() {
         data: {
             authorityBodyType: 'DESIGNATION',
             authorityBodyId: desCM.id,
-            decisionTypeId: decisionType.id,
-            functionalScopeId: scopeCreditSanction.id,
+            decisionTypeId: typeSanc.id,
+            functionalScopeId: scopeMap['CREDIT_SANCTION'].id,
             limitMin: 0,
             limitMax: 10000000, // 1 Crore
         }
@@ -340,8 +305,8 @@ async function main() {
         data: {
             authorityBodyType: 'DESIGNATION',
             authorityBodyId: desGM.id,
-            decisionTypeId: decisionType.id,
-            functionalScopeId: scopeCreditSanction.id,
+            decisionTypeId: typeSanc.id,
+            functionalScopeId: scopeMap['CREDIT_SANCTION'].id,
             limitMin: 10000001,
             limitMax: 100000000, // 10 Crores
         }
@@ -371,9 +336,59 @@ async function main() {
     for (const p of params) {
         await prisma.governanceParameter.upsert({
             where: { code: p.code },
-            update: {},
+            update: { updatedAt: new Date() },
             create: p,
         });
+    }
+
+    // --- 7. Automated Office Backfill ---
+    // Ensure all departments (especially functional ones) have a Head Office
+    console.log('Ensuring all departments have Governance Offices...');
+    const allDepts = await prisma.department.findMany({ include: { offices: true } });
+
+    for (const dept of allDepts) {
+        // Skip if 1st Line Head exists
+        if (dept.offices.some(o => o.authorityLine === '1st')) continue;
+
+        let officeName = `Head of ${dept.name}`;
+        let officeCode = `HEAD-${dept.code}`;
+        const tier = 'TIER_3_EXECUTION';
+
+        if (dept.type === 'BRANCH') {
+            officeName = `Branch Manager - ${dept.name}`;
+            officeCode = `BM-${dept.code}`;
+        } else if (dept.name.toUpperCase().includes('LPC') || dept.subType === 'LPC') {
+            officeName = `Head - ${dept.name}`;
+            officeCode = `LPC-${dept.code}`;
+        } else if (dept.type === 'FUNCTIONAL') {
+            officeName = dept.name.endsWith(' Department') ? `Head of ${dept.name}` : `Head of ${dept.name} Department`;
+            officeCode = `DEPT-${dept.code}`;
+        } else if (dept.subType === 'RO' && dept.parentId === null) {
+            // Root RO
+            officeName = `Regional Head - ${dept.name.replace('Regional Office - ', '')}`;
+            officeCode = `RH-${dept.code.replace('RO-', '')}`;
+        }
+
+        // Create missing office
+        const newOffice = await prisma.office.upsert({
+            where: { code: officeCode },
+            update: {
+                name: officeName,
+                tier: tier,
+                departmentId: dept.id,
+                authorityLine: '1st',
+                vetoPower: true
+            },
+            create: {
+                code: officeCode,
+                name: officeName,
+                tier: tier,
+                departmentId: dept.id,
+                authorityLine: '1st',
+                vetoPower: true
+            }
+        });
+        console.log(`[SEED-AUTO] Ensured ${officeName} for ${dept.code}`);
     }
 
     console.log('Seeding completed.');

@@ -18,17 +18,24 @@ let ObligationService = class ObligationService {
         this.prisma = prisma;
     }
     async create(dto) {
-        return this.prisma.obligation.create({
-            data: {
-                title: dto.title,
-                description: dto.description,
-                originType: dto.originType || 'MANUAL',
-                fromOfficeId: dto.fromOfficeId,
-                toOfficeId: dto.toOfficeId,
-                deadline: new Date(dto.deadline),
-                status: 'PENDING'
-            }
-        });
+        try {
+            const data = await this.prisma.obligation.create({
+                data: {
+                    title: dto.title,
+                    description: dto.description,
+                    originType: dto.originType || 'MANUAL',
+                    fromOfficeId: dto.fromOfficeId,
+                    toOfficeId: dto.toOfficeId,
+                    deadline: new Date(dto.deadline),
+                    status: 'PENDING'
+                }
+            });
+            return { success: true, data };
+        }
+        catch (error) {
+            console.error('Obligation Creation Error', error);
+            return { success: false, reason: 'SYSTEM_ERROR' };
+        }
     }
     async findAllForOffice(officeId) {
         return this.prisma.obligation.findMany({
@@ -46,15 +53,27 @@ let ObligationService = class ObligationService {
         });
     }
     async certify(id, officeId) {
-        const obligation = await this.prisma.obligation.findUnique({ where: { id } });
-        if (!obligation)
-            throw new common_1.BadRequestException('Obligation not found');
-        if (obligation.toOfficeId !== officeId) {
+        try {
+            const obligation = await this.prisma.obligation.findUnique({ where: { id } });
+            if (!obligation) {
+                return { success: false, reason: 'NOT_FOUND' };
+            }
+            if (obligation.toOfficeId !== officeId) {
+                return { success: false, reason: 'UNAUTHORIZED' };
+            }
+            if (obligation.status === 'CERTIFIED') {
+                return { success: false, reason: 'ALREADY_COMPLETED' };
+            }
+            const updated = await this.prisma.obligation.update({
+                where: { id },
+                data: { status: 'CERTIFIED' }
+            });
+            return { success: true, data: updated };
         }
-        return this.prisma.obligation.update({
-            where: { id },
-            data: { status: 'CERTIFIED' }
-        });
+        catch (error) {
+            console.error('Obligation Certification Error', error);
+            return { success: false, reason: 'SYSTEM_ERROR' };
+        }
     }
 };
 exports.ObligationService = ObligationService;

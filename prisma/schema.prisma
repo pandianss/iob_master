@@ -13,8 +13,11 @@ model Department {
   id        String       @id @default(uuid())
   code      String       @unique
   name      String
+  nameHindi String?
+  nameTamil String?
   type      String       // FUNCTIONAL, ADMINISTRATIVE, EXECUTIVE
   subType   String?      // CO, ZO, RO, BRANCH, DEPT
+  populationGroup String? // METRO, URBAN, SEMI_URBAN, RURAL
   status    String       @default("ACTIVE")
   parentId  String?
   parent    Department?  @relation("OrgHierarchy", fields: [parentId], references: [id])
@@ -78,9 +81,9 @@ model Department {
   inspectionReplayCapable   Boolean @default(false)
 
   postings  Posting[]
+  offices   Office[]
   availabilities UnitAvailability[]
   governanceParams GovernanceParameter[]
-  offices   Office[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -102,8 +105,9 @@ model Region {
   id             String   @id @default(uuid())
   code           String   @unique
   name           String
+  nameHindi      String?
+  nameTamil      String?
   status         String   @default("ACTIVE")
-  legacyZoneInfo String?
   postings       Posting[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -111,14 +115,18 @@ model Region {
 
 model Designation {
   id              String   @id @default(uuid())
-  title           String   @unique
+  title           String
+  titleHindi      String?
+  titleTamil      String?
   rank            Int
-  roleAbstraction String
+  // roleAbstraction removed - moved to User/Tenure context
   postings        Posting[]
   committeeMembers CommitteeMember[]
   attendance      MeetingAttendance[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  @@unique([title, rank], name: "title_rank")
 }
 
 // --- Human Masters ---
@@ -127,7 +135,13 @@ model User {
   id          String   @id @default(uuid())
   identityRef String   @unique
   name        String
+  nameHindi   String?
+  nameTamil   String?
   email       String   @unique
+  mobile      String?
+  dob         DateTime?
+  gender      String?  // MALE, FEMALE, TRANSGENDER, UNDISCLOSED
+  role        String   @default("STAFF") // ADMIN, HEAD, STAFF
   postings    Posting[]
   tenures     Tenure[]
   createdAt   DateTime @default(now())
@@ -138,8 +152,7 @@ model Posting {
   id            String      @id @default(uuid())
   userId        String
   user          User        @relation(fields: [userId], references: [id])
-  deptId        String
-  department    Department  @relation(fields: [deptId], references: [id])
+  departments   Department[] 
   regionId      String
   region        Region      @relation(fields: [regionId], references: [id])
   designationId String
@@ -346,6 +359,7 @@ model DecisionAudit {
   timestamp       DateTime @default(now())
   prevState       Json?
   newState        Json?
+  metadata        Json?
 }
 
 // --- Compliance & Control ---
@@ -420,12 +434,12 @@ enum OfficeTier {
 
 model Office {
   id              String       @id @default(uuid())
-  code            String       @unique // e.g., "MD-CEO", "GM-RISK", "BM-ADYAR"
+  code            String?      @unique // e.g., "MD-CEO", "GM-RISK", "BM-ADYAR"
   name            String       // e.g., "Managing Director & CEO"
   tier            OfficeTier
-  departmentId    String?      // Link to functional unit if applicable
+  authorityLine   String       @default("1st") // 1st or 2nd
   vetoPower       Boolean      @default(false)
-  department      Department?  @relation(fields: [departmentId], references: [id])
+  departments     Department[] 
   
   // Relationships
   occupants       Tenure[]
@@ -560,15 +574,15 @@ model ActionPoint {
   task            String
   targetDate      DateTime
   priority        String   // LOW, MEDIUM, HIGH, CRITICAL
-  status          String   @default(" OPEN\) // OPEN, IN_PROGRESS, COMPLETED, OVERDUE
+  status          String   @default("OPEN") // OPEN, IN_PROGRESS, COMPLETED, OVERDUE
  
- assignedToOfficeId String
- assignedTo Office @relation(\ActionPointAssignee\, fields: [assignedToOfficeId], references: [id])
+  assignedToOfficeId String
+  assignedTo Office @relation("ActionPointAssignee", fields: [assignedToOfficeId], references: [id])
  
- reports ActionTakenReport[]
+  reports ActionTakenReport[]
  
- createdAt DateTime @default(now())
- updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ActionTakenReport {
@@ -582,4 +596,49 @@ model ActionTakenReport {
  
  reportedAt DateTime @default(now())
  updatedAt DateTime @updatedAt
+}
+
+// --- Generic Data Ingestion ---
+
+model IngestionBatch {
+  id            String   @id @default(uuid())
+  fileType      String   // KEY_BUSINESS_PARAM, BULK_DEPOSIT, etc.
+  fileName      String
+  uploadedBy    String
+  uploadedAt    DateTime @default(now())
+  snapshotDate  DateTime @default(now()) // The business date for this data
+  status        String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  rowCount      Int      @default(0)
+  errorLog      Json?
+  
+  records       IngestionRecord[]
+  
+  @@index([fileType, snapshotDate])
+}
+
+model IngestionRecord {
+  id            String   @id @default(uuid())
+  batchId       String
+  batch         IngestionBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  
+  rowNumber     Int
+  data          Json     // The raw CSV row
+  status        String   @default("NEW") // NEW, PROCESSED, ERROR
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([batchId])
+}
+
+model ReportingTarget {
+  id          String   @id @default(uuid())
+  metric      String   // e.g., DEPOSITS, ADVANCES, CASA, RECOVERY
+  timeframe   String   // e.g., MONTH_END, QTR_END
+  targetValue Float
+  targetDate  DateTime
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([metric, timeframe, targetDate])
 }

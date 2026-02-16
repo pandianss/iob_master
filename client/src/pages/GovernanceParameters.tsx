@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Save, X, Settings } from 'lucide-react';
+import { Plus, Edit2, Trash2 } from 'lucide-react';
 
 interface GovernanceParameter {
     id: string;
@@ -247,6 +247,53 @@ export function GovernanceParameters() {
                         </div>
                     );
                 })}
+
+            </div>
+
+            <div className="mt-8 pt-8 border-t border-gray-200">
+                <div className="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-900">Context Masters</h2>
+                        <p className="text-sm text-gray-500">Define new Decision Types and Functional Scopes</p>
+                    </div>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                    <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        const form = e.target as HTMLFormElement;
+                        const data = new FormData(form);
+                        try {
+                            const res = await fetch('/api/governance/contexts', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    decisionTypeName: data.get('decisionTypeName'),
+                                    functionalScopeName: data.get('functionalScopeName')
+                                })
+                            });
+                            if (res.ok) {
+                                alert('Context created successfully! It will now appear in the creation wizard.');
+                                form.reset();
+                            }
+                        } catch (err) {
+                            console.error(err);
+                            alert('Failed to create context');
+                        }
+                    }} className="flex gap-4 items-end">
+                        <div className="flex-1">
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">New Decision Type</label>
+                            <input name="decisionTypeName" placeholder="e.g. Ratification" className="w-full p-3 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" required />
+                        </div>
+                        <div className="flex-1">
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">New Functional Scope</label>
+                            <input name="functionalScopeName" placeholder="e.g. IT Assets Purchase" className="w-full p-3 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" required />
+                        </div>
+                        <button type="submit" className="px-6 py-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-black transition-colors flex items-center">
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Context
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     );

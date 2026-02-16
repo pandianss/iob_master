@@ -12,16 +12,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DocumentService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../common/prisma.service");
-const template_service_1 = require("./template.service");
-const pdf_service_1 = require("./pdf.service");
+const press_service_1 = require("./press.service");
 let DocumentService = class DocumentService {
     prisma;
-    templateService;
-    pdfService;
-    constructor(prisma, templateService, pdfService) {
+    pressService;
+    constructor(prisma, pressService) {
         this.prisma = prisma;
-        this.templateService = templateService;
-        this.pdfService = pdfService;
+        this.pressService = pressService;
     }
     async generateDecisionInstrument(decisionId) {
         const decision = await this.prisma.decision.findUnique({
@@ -50,20 +47,6 @@ let DocumentService = class DocumentService {
         const outcome = decision.outcomeData;
         const reviewerOffice = outcome.reviewerId ? await this.prisma.office.findUnique({ where: { id: outcome.reviewerId } }) : null;
         const approverOffice = outcome.approverId ? await this.prisma.office.findUnique({ where: { id: outcome.approverId } }) : null;
-        const office = decision.initiatorPosting.user.tenures[0]?.office;
-        const meta = {
-            officeName: office?.name || 'Administrative Unit',
-            officePhone: '+91 44 2851 9123',
-            officeEmail: 'governance@iob.in',
-            officeAddress: '763, Anna Salai, Chennai - 600002, Tamil Nadu, India',
-            refNumber: `IOB/GOV/${new Date().getFullYear()}/${decision.id.substring(0, 8).toUpperCase()}`,
-            generatedAt: new Date().toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric'
-            }),
-            isDraft: decision.status !== 'APPROVED',
-        };
         const instrumentTypeMap = {
             'APPROVAL': 'Note for Approval',
             'RATIFICATION': 'Note for Ratification / Ex-Post Facto',
@@ -72,9 +55,10 @@ let DocumentService = class DocumentService {
             'INFORMATION': 'Note for Information'
         };
         const data = {
-            ...meta,
             instrumentType: instrumentTypeMap[outcome.instrumentType] || 'ADMINISTRATIVE PROPOSAL',
             subject: outcome?.subject || 'Administrative Proposal',
+            date: new Date().toLocaleDateString('en-IN'),
+            refNumber: `IOB/GOV/${new Date().getFullYear()}/${decision.id.substring(0, 8).toUpperCase()}`,
             amount: outcome?.amount ? `INR ${Number(outcome.amount).toLocaleString('en-IN')}` : 'N/A',
             justification: outcome?.justification,
             circulars: outcome?.circulars || [],
@@ -90,15 +74,23 @@ let DocumentService = class DocumentService {
             correctiveAction: outcome?.correctiveAction || 'None specified',
             gapAnalysis: outcome?.gapAnalysis || 'Policy compliant'
         };
-        const html = await this.templateService.render('office-note', data);
-        return this.pdfService.generatePdf(html);
+        const office = decision.initiatorPosting.user.tenures?.[0]?.office;
+        const context = {
+            templateName: 'office-note',
+            classification: 'INTERNAL',
+            isDraft: decision.status !== 'APPROVED',
+            showLogo: true,
+            showWatermark: true,
+            officeName: office?.name || 'Administrative Unit',
+            officeAddress: '763, Anna Salai, Chennai - 600002',
+        };
+        return this.pressService.publish(data, context);
     }
 };
 exports.DocumentService = DocumentService;
 exports.DocumentService = DocumentService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        template_service_1.TemplateService,
-        pdf_service_1.PdfService])
+        press_service_1.PressService])
 ], DocumentService);
 //# sourceMappingURL=document.service.js.map

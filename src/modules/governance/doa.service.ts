@@ -1,5 +1,20 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
+
+export interface ValidationResult {
+    valid: boolean;
+    reason?: 'NO_RULE' | 'BELOW_MIN' | 'EXCEEDS_LIMIT' | 'SYSTEM_ERROR';
+    limitMax?: number;
+    isEscalationMandatory?: boolean;
+}
+
+export interface AuthorityResolution {
+    found: boolean;
+    ruleId?: string;
+    authorityBodyType?: string;
+    authorityBodyId?: string;
+    limitMax?: number;
+}
 
 @Injectable()
 export class DoAService {
@@ -26,6 +41,7 @@ export class DoAService {
 
     /**
      * Validates if a specific authority body can approve a decision with a given amount.
+     * Returns a structured ValidationResult instead of throwing exceptions for business rules.
      */
     async validateAuthority(
         authorityBodyType: 'DESIGNATION' | 'COMMITTEE',
@@ -33,38 +49,43 @@ export class DoAService {
         decisionTypeId: string,
         functionalScopeId: string,
         amount: number,
-    ) {
-        const rule = await this.resolveRule(
-            authorityBodyType,
-            authorityBodyId,
-            decisionTypeId,
-            functionalScopeId,
-        );
+    ): Promise<ValidationResult> {
+        try {
+            const rule = await this.resolveRule(
+                authorityBodyType,
+                authorityBodyId,
+                decisionTypeId,
+                functionalScopeId,
+            );
 
-        if (!rule) {
-            throw new ForbiddenException('No authority rule found for this context.');
+            if (!rule) {
+                return { valid: false, reason: 'NO_RULE' };
+            }
+
+            if (rule.limitMin && amount < Number(rule.limitMin)) {
+                return { valid: false, reason: 'BELOW_MIN' };
+            }
+
+            if (rule.limitMax && amount > Number(rule.limitMax)) {
+                return {
+                    valid: false,
+                    reason: 'EXCEEDS_LIMIT',
+                    limitMax: Number(rule.limitMax),
+                    isEscalationMandatory: rule.isEscalationMandatory
+                };
+            }
+
+            return { valid: true };
+        } catch (error) {
+            console.error('DoA Validation Error', error);
+            return { valid: false, reason: 'SYSTEM_ERROR' };
         }
-
-        if (rule.limitMin && amount < Number(rule.limitMin)) {
-            throw new ForbiddenException(`Amount is below the minimum threshold of ${rule.limitMin}`);
-        }
-
-        if (rule.limitMax && amount > Number(rule.limitMax)) {
-            return {
-                valid: false,
-                reason: 'EXCEEDS_LIMIT',
-                limitMax: rule.limitMax,
-                isEscalationMandatory: rule.isEscalationMandatory
-            };
-        }
-
-        return { valid: true };
     }
 
     /**
      * Checks if an initiator has the basic authority to even start a decision process.
      */
-    async canInitiate(postingId: string, functionalScopeId: string) {
+    async canInitiate(postingId: string, functionalScopeId: string): Promise<boolean> {
         const posting = await this.prisma.posting.findUnique({
             where: { id: postingId },
             include: { designation: true },
@@ -87,7 +108,7 @@ export class DoAService {
      * Finds the authority body that should approve a specific amount.
      * This follows the hierarchy: highest authority that has a limit covering this amount.
      */
-    async resolveAuthorityBody(decisionTypeId: string, functionalScopeId: string, amount: number) {
+    async resolveAuthorityBody(decisionTypeId: string, functionalScopeId: string, amount: number): Promise<AuthorityResolution> {
         // Find all applicable rules sorted by limitMax
         const rules = await this.prisma.doARule.findMany({
             where: {
@@ -107,12 +128,19 @@ export class DoAService {
             return amount >= min && amount <= max;
         });
 
-        if (!applicableRule) {
-            // If no rule matches, it might exceed all limits, return the one with the highest limitMax
-            return rules[rules.length - 1] || null;
+        if (applicableRule) {
+            return {
+                found: true,
+                ruleId: applicableRule.id,
+                authorityBodyType: applicableRule.authorityBodyType,
+                authorityBodyId: applicableRule.authorityBodyId,
+                limitMax: Number(applicableRule.limitMax),
+            };
         }
 
-        return applicableRule;
+        // Return the highest authority if logic dictates standard escalation (or explicitly fail)
+        // For now, if no one covers the amount, we return valid=false
+        return { found: false };
     }
 
     /**
@@ -121,17 +149,20 @@ export class DoAService {
     async fetchAllowedContexts(postingId: string) {
         const posting = await this.prisma.posting.findUnique({
             where: { id: postingId },
-            include: { department: true },
+            include: { departments: true },
         });
 
         if (!posting) return [];
 
-        // Fetch based on specific department OR unit type (RO, ZO, HO, Branch)
+        // Fetch based on specific departments OR unit types (RO, ZO, HO, Branch)
+        const deptIds = posting.departments.map(d => d.id);
+        const unitTypes = posting.departments.map(d => d.type);
+
         const availabilities = await this.prisma.unitAvailability.findMany({
             where: {
                 OR: [
-                    { deptId: posting.deptId },
-                    { unitType: posting.department.type },
+                    { deptId: { in: deptIds } },
+                    { unitType: { in: unitTypes } },
                 ],
             },
             include: {

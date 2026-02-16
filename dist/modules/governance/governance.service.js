@@ -51,6 +51,34 @@ let GovernanceService = class GovernanceService {
             where: { id }
         });
     }
+    async createContext(data) {
+        const dtCode = data.decisionTypeName.toUpperCase().replace(/\s+/g, '_');
+        const fsCode = data.functionalScopeName.toUpperCase().replace(/\s+/g, '_');
+        const decisionType = await this.prisma.decisionType.upsert({
+            where: { code: dtCode },
+            update: {},
+            create: { code: dtCode, name: data.decisionTypeName, category: 'ADMIN' }
+        });
+        const functionalScope = await this.prisma.functionalScope.upsert({
+            where: { code: fsCode },
+            update: {},
+            create: { code: fsCode, name: data.functionalScopeName }
+        });
+        const defaultAuth = await this.prisma.designation.findFirst();
+        if (!defaultAuth) {
+            throw new Error('Cannot create default rule: No designations found.');
+        }
+        return this.prisma.doARule.create({
+            data: {
+                authorityBodyType: 'DESIGNATION',
+                authorityBodyId: defaultAuth.id,
+                decisionTypeId: decisionType.id,
+                functionalScopeId: functionalScope.id,
+                limitMin: 0,
+                limitMax: 1000000,
+            }
+        });
+    }
 };
 exports.GovernanceService = GovernanceService;
 exports.GovernanceService = GovernanceService = __decorate([

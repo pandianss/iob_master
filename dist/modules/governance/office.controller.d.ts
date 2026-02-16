@@ -3,15 +3,18 @@ export declare class OfficeController {
     private readonly officeService;
     constructor(officeService: OfficeService);
     findAll(): Promise<({
-        department: {
+        departments: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
             name: string;
             status: string;
             code: string;
+            nameHindi: string | null;
+            nameTamil: string | null;
             type: string;
             subType: string | null;
+            populationGroup: string | null;
             parentId: string | null;
             statutoryBasis: string | null;
             establishmentOrderRef: string | null;
@@ -52,109 +55,111 @@ export declare class OfficeController {
             documentRetentionPolicy: string | null;
             auditTrailEnabled: boolean;
             inspectionReplayCapable: boolean;
-        } | null;
+        }[];
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
         name: string;
-        code: string;
-        departmentId: string | null;
+        code: string | null;
         tier: import(".prisma/client").$Enums.OfficeTier;
+        authorityLine: string;
         vetoPower: boolean;
     })[]>;
     create(body: any): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
-        code: string;
-        departmentId: string | null;
-        tier: import(".prisma/client").$Enums.OfficeTier;
-        vetoPower: boolean;
-    }>;
-    update(id: string, body: any): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
-        code: string;
-        departmentId: string | null;
-        tier: import(".prisma/client").$Enums.OfficeTier;
-        vetoPower: boolean;
-    }>;
-    remove(id: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
-        code: string;
-        departmentId: string | null;
-        tier: import(".prisma/client").$Enums.OfficeTier;
-        vetoPower: boolean;
-    }>;
-    findByCode(code: string): Promise<({
-        department: {
+        success: boolean;
+        reason: string;
+        message: string;
+        data?: undefined;
+    } | {
+        success: boolean;
+        data: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
             name: string;
-            status: string;
-            code: string;
-            type: string;
-            subType: string | null;
-            parentId: string | null;
-            statutoryBasis: string | null;
-            establishmentOrderRef: string | null;
-            dateOfEstablishment: Date | null;
-            geographicalScope: string | null;
-            peerGroupCode: string | null;
-            reportingChain: import("@prisma/client/runtime/library").JsonValue | null;
-            mandateStatement: string | null;
-            delegationRef: string | null;
-            powers: string[];
-            decisionRights: import("@prisma/client/runtime/library").JsonValue | null;
-            vetoRights: import("@prisma/client/runtime/library").JsonValue | null;
-            restrictions: import("@prisma/client/runtime/library").JsonValue | null;
-            policiesOwned: string[];
-            processesOwned: string[];
-            metricsAccountableFor: string[];
-            certificationResponsibility: import("@prisma/client/runtime/library").JsonValue | null;
-            dataRoles: string[];
-            sourceSystems: string[];
-            misFrequency: string | null;
-            misSla: string | null;
-            dataFreezeTime: string | null;
-            revisionPolicy: string | null;
-            riskCategory: string | null;
-            inspectionCycle: string | null;
-            lastInspectionDate: Date | null;
-            openObservationsCount: number;
-            vigilanceSensitivity: string | null;
-            regulatoryTouchpoints: import("@prisma/client/runtime/library").JsonValue | null;
-            linkedCommittees: import("@prisma/client/runtime/library").JsonValue | null;
-            escalationPath: import("@prisma/client/runtime/library").JsonValue | null;
-            exceptionThresholds: import("@prisma/client/runtime/library").JsonValue | null;
-            canReceiveObligations: boolean;
-            canIssueObligations: boolean;
-            obligationCategories: string[];
-            defaultConsequence: import("@prisma/client/runtime/library").JsonValue | null;
-            decisionLogRetentionYears: number;
-            documentRetentionPolicy: string | null;
-            auditTrailEnabled: boolean;
-            inspectionReplayCapable: boolean;
-        } | null;
-    } & {
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
-        code: string;
-        departmentId: string | null;
-        tier: import(".prisma/client").$Enums.OfficeTier;
-        vetoPower: boolean;
-    }) | null>;
+            code: string | null;
+            tier: import(".prisma/client").$Enums.OfficeTier;
+            authorityLine: string;
+            vetoPower: boolean;
+        };
+        reason?: undefined;
+        message?: undefined;
+    } | {
+        success: boolean;
+        reason: string;
+        message?: undefined;
+        data?: undefined;
+    }>;
+    update(id: string, body: any): Promise<import("./office.service").OfficeResult>;
+    remove(id: string): Promise<import("./office.service").OfficeResult>;
+    findByCode(code: string): Promise<import("./office.service").OfficeResult>;
     getActiveTenure(userId: string): Promise<({
+        office: {
+            departments: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                name: string;
+                status: string;
+                code: string;
+                nameHindi: string | null;
+                nameTamil: string | null;
+                type: string;
+                subType: string | null;
+                populationGroup: string | null;
+                parentId: string | null;
+                statutoryBasis: string | null;
+                establishmentOrderRef: string | null;
+                dateOfEstablishment: Date | null;
+                geographicalScope: string | null;
+                peerGroupCode: string | null;
+                reportingChain: import("@prisma/client/runtime/library").JsonValue | null;
+                mandateStatement: string | null;
+                delegationRef: string | null;
+                powers: string[];
+                decisionRights: import("@prisma/client/runtime/library").JsonValue | null;
+                vetoRights: import("@prisma/client/runtime/library").JsonValue | null;
+                restrictions: import("@prisma/client/runtime/library").JsonValue | null;
+                policiesOwned: string[];
+                processesOwned: string[];
+                metricsAccountableFor: string[];
+                certificationResponsibility: import("@prisma/client/runtime/library").JsonValue | null;
+                dataRoles: string[];
+                sourceSystems: string[];
+                misFrequency: string | null;
+                misSla: string | null;
+                dataFreezeTime: string | null;
+                revisionPolicy: string | null;
+                riskCategory: string | null;
+                inspectionCycle: string | null;
+                lastInspectionDate: Date | null;
+                openObservationsCount: number;
+                vigilanceSensitivity: string | null;
+                regulatoryTouchpoints: import("@prisma/client/runtime/library").JsonValue | null;
+                linkedCommittees: import("@prisma/client/runtime/library").JsonValue | null;
+                escalationPath: import("@prisma/client/runtime/library").JsonValue | null;
+                exceptionThresholds: import("@prisma/client/runtime/library").JsonValue | null;
+                canReceiveObligations: boolean;
+                canIssueObligations: boolean;
+                obligationCategories: string[];
+                defaultConsequence: import("@prisma/client/runtime/library").JsonValue | null;
+                decisionLogRetentionYears: number;
+                documentRetentionPolicy: string | null;
+                auditTrailEnabled: boolean;
+                inspectionReplayCapable: boolean;
+            }[];
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            name: string;
+            code: string | null;
+            tier: import(".prisma/client").$Enums.OfficeTier;
+            authorityLine: string;
+            vetoPower: boolean;
+        };
+    } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
@@ -163,7 +168,5 @@ export declare class OfficeController {
         officeId: string;
         startDate: Date;
         endDate: Date | null;
-    } & {
-        office: import(".prisma/client").Office;
     }) | null>;
 }

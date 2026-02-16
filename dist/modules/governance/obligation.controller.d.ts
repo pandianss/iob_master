@@ -4,18 +4,26 @@ export declare class ObligationController {
     private readonly obligationService;
     constructor(obligationService: ObligationService);
     create(dto: CreateObligationDto): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        status: string;
-        description: string;
-        title: string;
-        originType: string;
-        originId: string | null;
-        deadline: Date;
-        escalationLevel: number;
-        fromOfficeId: string;
-        toOfficeId: string;
+        success: boolean;
+        data: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            status: string;
+            description: string;
+            title: string;
+            originType: string;
+            originId: string | null;
+            deadline: Date;
+            escalationLevel: number;
+            fromOfficeId: string;
+            toOfficeId: string;
+        };
+        reason?: undefined;
+    } | {
+        success: boolean;
+        reason: string;
+        data?: undefined;
     }>;
     findAll(officeId: string): Promise<({
         fromOffice: {
@@ -23,9 +31,9 @@ export declare class ObligationController {
             createdAt: Date;
             updatedAt: Date;
             name: string;
-            code: string;
-            departmentId: string | null;
+            code: string | null;
             tier: import(".prisma/client").$Enums.OfficeTier;
+            authorityLine: string;
             vetoPower: boolean;
         };
         toOffice: {
@@ -33,9 +41,9 @@ export declare class ObligationController {
             createdAt: Date;
             updatedAt: Date;
             name: string;
-            code: string;
-            departmentId: string | null;
+            code: string | null;
             tier: import(".prisma/client").$Enums.OfficeTier;
+            authorityLine: string;
             vetoPower: boolean;
         };
     } & {
@@ -52,18 +60,5 @@ export declare class ObligationController {
         fromOfficeId: string;
         toOfficeId: string;
     })[]>;
-    certify(id: string, officeId: string): Promise<{
-        id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        status: string;
-        description: string;
-        title: string;
-        originType: string;
-        originId: string | null;
-        deadline: Date;
-        escalationLevel: number;
-        fromOfficeId: string;
-        toOfficeId: string;
-    }>;
+    certify(id: string, officeId: string): Promise<import("./obligation.service").ObligationResult>;
 }

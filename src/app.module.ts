@@ -10,6 +10,7 @@ import { ReportingModule } from './modules/reporting/reporting.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { DocumentModule } from './modules/document/document.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { IngestionModule } from './modules/ingestion/ingestion.module';
 
 @Module({
   imports: [
@@ -20,7 +21,8 @@ import { AuthModule } from './modules/auth/auth.module';
     ReportingModule,
     AdminModule,
     DocumentModule,
-    AuthModule
+    AuthModule,
+    IngestionModule
   ],
   controllers: [AppController],
   providers: [AppService],

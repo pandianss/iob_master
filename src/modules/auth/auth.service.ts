@@ -14,7 +14,7 @@ export class AuthService {
                 postings: {
                     include: {
                         designation: true,
-                        department: true
+                        departments: true,
                     }
                 },
                 tenures: {

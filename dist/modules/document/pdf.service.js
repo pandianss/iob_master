@@ -45,7 +45,6 @@ const puppeteer = __importStar(require("puppeteer"));
 let PdfService = class PdfService {
     browser;
     async onModuleInit() {
-        await this.launchBrowser();
     }
     async onModuleDestroy() {
         if (this.browser) {
@@ -53,6 +52,8 @@ let PdfService = class PdfService {
         }
     }
     async launchBrowser() {
+        if (this.browser)
+            return;
         this.browser = await puppeteer.launch({
             headless: true,
             args: ['--no-sandbox', '--disable-setuid-sandbox', '--font-render-hinting=none'],

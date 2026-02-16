@@ -30,4 +30,9 @@ export class GovernanceController {
     deleteParameter(@Param('id') id: string) {
         return this.governanceService.deleteParameter(id);
     }
+
+    @Post('contexts')
+    createContext(@Body() body: { decisionTypeName: string; functionalScopeName: string }) {
+        return this.governanceService.createContext(body);
+    }
 }

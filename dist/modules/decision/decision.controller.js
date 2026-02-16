@@ -26,6 +26,9 @@ let DecisionController = class DecisionController {
     async performAction(id, body) {
         return this.decisionService.performAction(id, body.actorPostingId, body.action, body.notes, body.evidenceRefs);
     }
+    async findOne(id) {
+        return this.decisionService.findOne(id);
+    }
     async findAll(officeId) {
         return this.decisionService.findAll(officeId);
     }
@@ -46,6 +49,13 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], DecisionController.prototype, "performAction", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], DecisionController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)('officeId')),

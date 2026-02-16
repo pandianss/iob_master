@@ -38,8 +38,35 @@ let AdminController = class AdminController {
     getDesgs() {
         return this.adminService.getDesignations();
     }
+    updateDesg(id, body) {
+        return this.adminService.updateDesignation(id, body);
+    }
+    deleteDesg(id) {
+        return this.adminService.deleteDesignation(id);
+    }
+    getRegions() {
+        return this.adminService.getRegions();
+    }
+    createRegion(body) {
+        return this.adminService.createRegion(body);
+    }
+    updateRegion(id, body) {
+        return this.adminService.updateRegion(id, body);
+    }
+    deleteRegion(id) {
+        return this.adminService.deleteRegion(id);
+    }
     createUser(body) {
         return this.adminService.createUser(body);
+    }
+    updateUser(id, body) {
+        return this.adminService.updateUser(id, body);
+    }
+    cleanupUserRoles(id) {
+        return this.adminService.cleanupUserRoles(id);
+    }
+    deleteUser(id) {
+        return this.adminService.deleteUser(id);
     }
     assignPosting(body) {
         return this.adminService.assignPosting(body);
@@ -49,6 +76,12 @@ let AdminController = class AdminController {
     }
     assignTenure(body) {
         return this.adminService.assignTenure(body);
+    }
+    deletePosting(id) {
+        return this.adminService.deletePosting(id);
+    }
+    deleteTenure(id) {
+        return this.adminService.deleteTenure(id);
     }
     createRule(body) {
         return this.adminService.createDoARule(body);
@@ -100,12 +133,77 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "getDesgs", null);
 __decorate([
+    (0, common_1.Put)('designations/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "updateDesg", null);
+__decorate([
+    (0, common_1.Delete)('designations/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "deleteDesg", null);
+__decorate([
+    (0, common_1.Get)('regions'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getRegions", null);
+__decorate([
+    (0, common_1.Post)('regions'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "createRegion", null);
+__decorate([
+    (0, common_1.Put)('regions/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "updateRegion", null);
+__decorate([
+    (0, common_1.Delete)('regions/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "deleteRegion", null);
+__decorate([
     (0, common_1.Post)('users'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "createUser", null);
+__decorate([
+    (0, common_1.Put)('users/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "updateUser", null);
+__decorate([
+    (0, common_1.Post)('users/:id/cleanup'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "cleanupUserRoles", null);
+__decorate([
+    (0, common_1.Delete)('users/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "deleteUser", null);
 __decorate([
     (0, common_1.Post)('postings'),
     __param(0, (0, common_1.Body)()),
@@ -126,6 +224,20 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "assignTenure", null);
+__decorate([
+    (0, common_1.Delete)('postings/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "deletePosting", null);
+__decorate([
+    (0, common_1.Delete)('tenures/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "deleteTenure", null);
 __decorate([
     (0, common_1.Post)('doa-rules'),
     __param(0, (0, common_1.Body)()),

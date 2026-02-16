@@ -1,24 +1,41 @@
-
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
-import { CreateObligationDto } from './dto/create-obligation.dto';
+
+export interface ObligationResult {
+    success: boolean;
+    reason?: 'NOT_FOUND' | 'UNAUTHORIZED' | 'ALREADY_COMPLETED' | 'SYSTEM_ERROR';
+    data?: any;
+}
 
 @Injectable()
 export class ObligationService {
     constructor(private prisma: PrismaService) { }
 
-    async create(dto: any) { // Type with DTO later
-        return this.prisma.obligation.create({
-            data: {
-                title: dto.title,
-                description: dto.description,
-                originType: dto.originType || 'MANUAL', // POLICY, COMMITTEE, REGULATOR
-                fromOfficeId: dto.fromOfficeId,
-                toOfficeId: dto.toOfficeId,
-                deadline: new Date(dto.deadline),
-                status: 'PENDING'
-            }
-        });
+    async create(dto: {
+        title: string;
+        description: string;
+        originType: string;
+        fromOfficeId: string;
+        toOfficeId: string;
+        deadline: Date | string;
+    }) {
+        try {
+            const data = await this.prisma.obligation.create({
+                data: {
+                    title: dto.title,
+                    description: dto.description,
+                    originType: dto.originType || 'MANUAL',
+                    fromOfficeId: dto.fromOfficeId,
+                    toOfficeId: dto.toOfficeId,
+                    deadline: new Date(dto.deadline),
+                    status: 'PENDING'
+                }
+            });
+            return { success: true, data };
+        } catch (error) {
+            console.error('Obligation Creation Error', error);
+            return { success: false, reason: 'SYSTEM_ERROR' };
+        }
     }
 
     async findAllForOffice(officeId: string) {
@@ -37,21 +54,32 @@ export class ObligationService {
         });
     }
 
-    async certify(id: string, officeId: string) {
-        const obligation = await this.prisma.obligation.findUnique({ where: { id } });
-        if (!obligation) throw new BadRequestException('Obligation not found');
+    async certify(id: string, officeId: string): Promise<ObligationResult> {
+        try {
+            const obligation = await this.prisma.obligation.findUnique({ where: { id } });
 
-        // Only target office can certify completion? Or maybe fromOffice marks as certified? 
-        // Architecture: "Closure certification". Usually the doer certifies "I done it", and reviewer accepts.
-        // For simplicity: Target marks as CERTIFIED.
+            if (!obligation) {
+                return { success: false, reason: 'NOT_FOUND' };
+            }
 
-        if (obligation.toOfficeId !== officeId) {
-            // throw new ForbiddenException('Only the assignee can certify completion');
+            // Strict Authority Check: Only the assignee (toOffice) can certify completion
+            if (obligation.toOfficeId !== officeId) {
+                return { success: false, reason: 'UNAUTHORIZED' };
+            }
+
+            if (obligation.status === 'CERTIFIED') {
+                return { success: false, reason: 'ALREADY_COMPLETED' };
+            }
+
+            const updated = await this.prisma.obligation.update({
+                where: { id },
+                data: { status: 'CERTIFIED' }
+            });
+
+            return { success: true, data: updated };
+        } catch (error) {
+            console.error('Obligation Certification Error', error);
+            return { success: false, reason: 'SYSTEM_ERROR' };
         }
-
-        return this.prisma.obligation.update({
-            where: { id },
-            data: { status: 'CERTIFIED' }
-        });
     }
 }

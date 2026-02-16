@@ -16,20 +16,22 @@ const doa_service_1 = require("../governance/doa.service");
 var DecisionStatus;
 (function (DecisionStatus) {
     DecisionStatus["DRAFT"] = "DRAFT";
-    DecisionStatus["PENDING_REVIEW"] = "PENDING_REVIEW";
     DecisionStatus["PENDING_APPROVAL"] = "PENDING_APPROVAL";
+    DecisionStatus["QUERY_RAISED"] = "QUERY_RAISED";
     DecisionStatus["APPROVED"] = "APPROVED";
-    DecisionStatus["ESCALATED"] = "ESCALATED";
+    DecisionStatus["SANCTIONED"] = "SANCTIONED";
     DecisionStatus["REJECTED"] = "REJECTED";
+    DecisionStatus["ESCALATED"] = "ESCALATED";
 })(DecisionStatus || (exports.DecisionStatus = DecisionStatus = {}));
 var ActionType;
 (function (ActionType) {
-    ActionType["RECOMMEND"] = "RECOMMEND";
-    ActionType["REVIEW"] = "REVIEW";
+    ActionType["SUBMIT"] = "SUBMIT";
     ActionType["APPROVE"] = "APPROVE";
-    ActionType["RATIFY"] = "RATIFY";
+    ActionType["SANCTION"] = "SANCTION";
+    ActionType["REJECT"] = "REJECT";
     ActionType["ESCALATE"] = "ESCALATE";
     ActionType["QUERY"] = "QUERY";
+    ActionType["RESPOND"] = "RESPOND";
 })(ActionType || (exports.ActionType = ActionType = {}));
 let DecisionService = class DecisionService {
     prisma;
@@ -39,14 +41,7 @@ let DecisionService = class DecisionService {
         this.doaService = doaService;
     }
     async create(initiatorPostingId, data, deptContextId, regionContextId, decisionTypeId, functionalScopeId) {
-        let targetPostingId = initiatorPostingId;
-        if (initiatorPostingId === 'mock-ro-posting') {
-            const firstPosting = await this.prisma.posting.findFirst({
-                where: { status: 'ACTIVE' }
-            });
-            if (firstPosting)
-                targetPostingId = firstPosting.id;
-        }
+        const targetPostingId = initiatorPostingId;
         const posting = await this.prisma.posting.findUnique({
             where: { id: targetPostingId },
             include: { designation: true }
@@ -58,8 +53,8 @@ let DecisionService = class DecisionService {
         if (decisionTypeId && functionalScopeId) {
             const amount = data?.amount || 0;
             const rule = await this.doaService.resolveAuthorityBody(decisionTypeId, functionalScopeId, amount);
-            if (rule)
-                authRuleId = rule.id;
+            if (rule.found)
+                authRuleId = rule.ruleId;
         }
         return this.prisma.decision.create({
             data: {
@@ -86,27 +81,51 @@ let DecisionService = class DecisionService {
         if (!actor || actor.status !== 'ACTIVE')
             throw new common_1.ForbiddenException('Invalid actor posting');
         switch (action) {
-            case ActionType.RECOMMEND:
-                return this.handleRecommend(decision, actor, notes || '');
-            case ActionType.REVIEW:
-                return this.handleReview(decision, actor, notes || '');
+            case ActionType.SUBMIT:
+                return this.handleSubmit(decision, actor, notes || '');
             case ActionType.APPROVE:
                 return this.handleApprove(decision, actor, notes || '');
+            case ActionType.SANCTION:
+                return this.handleSanction(decision, actor, notes || '');
+            case ActionType.REJECT:
+                return this.handleReject(decision, actor, notes || '');
             case ActionType.ESCALATE:
                 return this.handleEscalate(decision, actor, notes || '');
+            case ActionType.QUERY:
+                return this.handleQuery(decision, actor, notes || '');
+            case ActionType.RESPOND:
+                return this.handleRespond(decision, actor, notes || '');
             default:
                 throw new common_1.BadRequestException('Unsupported action');
         }
     }
-    async handleRecommend(decision, actor, notes) {
+    async handleSubmit(decision, actor, notes) {
         if (decision.status !== DecisionStatus.DRAFT) {
-            throw new common_1.BadRequestException('Can only recommend from DRAFT');
+            throw new common_1.BadRequestException('Can only submit from DRAFT');
         }
-        return this.updateState(decision.id, actor.id, DecisionStatus.PENDING_REVIEW, { notes });
+        return this.updateState(decision.id, actor.id, DecisionStatus.PENDING_APPROVAL, { notes });
     }
-    async handleReview(decision, actor, notes) {
-        if (decision.status !== DecisionStatus.PENDING_REVIEW) {
-            throw new common_1.BadRequestException('Can only review if PENDING_REVIEW');
+    async handleSanction(decision, actor, notes) {
+        if (decision.status !== DecisionStatus.PENDING_APPROVAL) {
+            throw new common_1.BadRequestException('Can only sanction if PENDING_APPROVAL');
+        }
+        return this.updateState(decision.id, actor.id, DecisionStatus.SANCTIONED, { notes });
+    }
+    async handleReject(decision, actor, notes) {
+        if (decision.status !== DecisionStatus.PENDING_APPROVAL && decision.status !== DecisionStatus.QUERY_RAISED) {
+            throw new common_1.BadRequestException('Invalid state for rejection');
+        }
+        return this.updateState(decision.id, actor.id, DecisionStatus.REJECTED, { notes });
+    }
+    async handleQuery(decision, actor, notes) {
+        if (decision.status !== DecisionStatus.PENDING_APPROVAL) {
+            throw new common_1.BadRequestException('Can only raise query on pending proposals');
+        }
+        return this.updateState(decision.id, actor.id, DecisionStatus.QUERY_RAISED, { notes });
+    }
+    async handleRespond(decision, actor, notes) {
+        if (decision.status !== DecisionStatus.QUERY_RAISED) {
+            throw new common_1.BadRequestException('Can only respond to active queries');
         }
         return this.updateState(decision.id, actor.id, DecisionStatus.PENDING_APPROVAL, { notes });
     }
@@ -140,10 +159,45 @@ let DecisionService = class DecisionService {
                     actionType: 'STATE_CHANGE',
                     prevState: prevDecision?.status,
                     newState: nextStatus,
+                    metadata: metadata,
                 }
             });
             return decision;
         });
+    }
+    async findOne(id) {
+        const decision = await this.prisma.decision.findUnique({
+            where: { id },
+            include: {
+                initiatorPosting: {
+                    include: {
+                        user: true,
+                        designation: true,
+                    }
+                },
+                authRule: {
+                    include: {
+                        decisionType: true,
+                        functionalScope: true
+                    }
+                },
+                auditLogs: {
+                    include: {
+                        actorPosting: {
+                            include: {
+                                user: true,
+                                designation: true
+                            }
+                        }
+                    },
+                    orderBy: { timestamp: 'desc' }
+                },
+                evidence: true
+            }
+        });
+        if (!decision)
+            throw new common_1.BadRequestException('Decision not found');
+        return decision;
     }
     async findAll(officeId) {
         return this.prisma.decision.findMany({

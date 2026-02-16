@@ -5,20 +5,22 @@ import { DoAService } from '../governance/doa.service';
 
 export enum DecisionStatus {
     DRAFT = 'DRAFT',
-    PENDING_REVIEW = 'PENDING_REVIEW',
     PENDING_APPROVAL = 'PENDING_APPROVAL',
+    QUERY_RAISED = 'QUERY_RAISED',
     APPROVED = 'APPROVED',
-    ESCALATED = 'ESCALATED',
+    SANCTIONED = 'SANCTIONED',
     REJECTED = 'REJECTED',
+    ESCALATED = 'ESCALATED',
 }
 
 export enum ActionType {
-    RECOMMEND = 'RECOMMEND',
-    REVIEW = 'REVIEW',
+    SUBMIT = 'SUBMIT',
     APPROVE = 'APPROVE',
-    RATIFY = 'RATIFY',
+    SANCTION = 'SANCTION',
+    REJECT = 'REJECT',
     ESCALATE = 'ESCALATE',
     QUERY = 'QUERY',
+    RESPOND = 'RESPOND',
 }
 
 @Injectable()
@@ -30,14 +32,7 @@ export class DecisionService {
 
     async create(initiatorPostingId: string, data: any, deptContextId: string, regionContextId: string, decisionTypeId?: string, functionalScopeId?: string) {
         // 1. Verify initiator posting is active
-        // DEV: Handle mock posting ID
-        let targetPostingId = initiatorPostingId;
-        if (initiatorPostingId === 'mock-ro-posting') {
-            const firstPosting = await this.prisma.posting.findFirst({
-                where: { status: 'ACTIVE' }
-            });
-            if (firstPosting) targetPostingId = firstPosting.id;
-        }
+        const targetPostingId = initiatorPostingId;
 
         const posting = await this.prisma.posting.findUnique({
             where: { id: targetPostingId },
@@ -53,7 +48,7 @@ export class DecisionService {
         if (decisionTypeId && functionalScopeId) {
             const amount = data?.amount || 0;
             const rule = await this.doaService.resolveAuthorityBody(decisionTypeId, functionalScopeId, amount);
-            if (rule) authRuleId = rule.id;
+            if (rule.found) authRuleId = rule.ruleId;
         }
 
         // 3. Create decision in DRAFT
@@ -86,33 +81,57 @@ export class DecisionService {
 
         // State machine logic
         switch (action) {
-            case ActionType.RECOMMEND:
-                return this.handleRecommend(decision as any, actor, notes || '');
-            case ActionType.REVIEW:
-                return this.handleReview(decision as any, actor, notes || '');
+            case ActionType.SUBMIT:
+                return this.handleSubmit(decision as any, actor, notes || '');
             case ActionType.APPROVE:
                 return this.handleApprove(decision as any, actor, notes || '');
+            case ActionType.SANCTION:
+                return this.handleSanction(decision as any, actor, notes || '');
+            case ActionType.REJECT:
+                return this.handleReject(decision as any, actor, notes || '');
             case ActionType.ESCALATE:
                 return this.handleEscalate(decision as any, actor, notes || '');
+            case ActionType.QUERY:
+                return this.handleQuery(decision as any, actor, notes || '');
+            case ActionType.RESPOND:
+                return this.handleRespond(decision as any, actor, notes || '');
             default:
                 throw new BadRequestException('Unsupported action');
         }
     }
 
-    private async handleRecommend(decision: any, actor: any, notes: string) {
+    private async handleSubmit(decision: any, actor: any, notes: string) {
         if (decision.status !== DecisionStatus.DRAFT) {
-            throw new BadRequestException('Can only recommend from DRAFT');
+            throw new BadRequestException('Can only submit from DRAFT');
         }
-
-        return this.updateState(decision.id, actor.id, DecisionStatus.PENDING_REVIEW, { notes });
+        return this.updateState(decision.id, actor.id, DecisionStatus.PENDING_APPROVAL, { notes });
     }
 
-    private async handleReview(decision: any, actor: any, notes: string) {
-        if (decision.status !== DecisionStatus.PENDING_REVIEW) {
-            throw new BadRequestException('Can only review if PENDING_REVIEW');
+    private async handleSanction(decision: any, actor: any, notes: string) {
+        if (decision.status !== DecisionStatus.PENDING_APPROVAL) {
+            throw new BadRequestException('Can only sanction if PENDING_APPROVAL');
         }
+        return this.updateState(decision.id, actor.id, DecisionStatus.SANCTIONED, { notes });
+    }
 
-        // logic to check if actor has Review authority for this scope (mocked for now)
+    private async handleReject(decision: any, actor: any, notes: string) {
+        if (decision.status !== DecisionStatus.PENDING_APPROVAL && decision.status !== DecisionStatus.QUERY_RAISED) {
+            throw new BadRequestException('Invalid state for rejection');
+        }
+        return this.updateState(decision.id, actor.id, DecisionStatus.REJECTED, { notes });
+    }
+
+    private async handleQuery(decision: any, actor: any, notes: string) {
+        if (decision.status !== DecisionStatus.PENDING_APPROVAL) {
+            throw new BadRequestException('Can only raise query on pending proposals');
+        }
+        return this.updateState(decision.id, actor.id, DecisionStatus.QUERY_RAISED, { notes });
+    }
+
+    private async handleRespond(decision: any, actor: any, notes: string) {
+        if (decision.status !== DecisionStatus.QUERY_RAISED) {
+            throw new BadRequestException('Can only respond to active queries');
+        }
         return this.updateState(decision.id, actor.id, DecisionStatus.PENDING_APPROVAL, { notes });
     }
 
@@ -161,11 +180,47 @@ export class DecisionService {
                     actionType: 'STATE_CHANGE',
                     prevState: prevDecision?.status as any,
                     newState: nextStatus as any,
+                    metadata: metadata,
                 }
             });
 
             return decision;
         });
+    }
+
+    async findOne(id: string) {
+        const decision = await this.prisma.decision.findUnique({
+            where: { id },
+            include: {
+                initiatorPosting: {
+                    include: {
+                        user: true,
+                        designation: true,
+                    }
+                },
+                authRule: {
+                    include: {
+                        decisionType: true,
+                        functionalScope: true
+                    }
+                },
+                auditLogs: {
+                    include: {
+                        actorPosting: {
+                            include: {
+                                user: true,
+                                designation: true
+                            }
+                        }
+                    },
+                    orderBy: { timestamp: 'desc' }
+                },
+                evidence: true
+            }
+        });
+
+        if (!decision) throw new BadRequestException('Decision not found');
+        return decision;
     }
 
     async findAll(officeId?: string) {

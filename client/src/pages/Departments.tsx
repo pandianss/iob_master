@@ -7,9 +7,12 @@ interface Department {
     id: string;
     code: string;
     name: string;
+    nameHindi?: string;
+    nameTamil?: string;
     type: string;
     subType?: string;
     status: string;
+    populationGroup?: string;
     parentId?: string;
     parent?: { name: string };
 }
@@ -23,35 +26,22 @@ export function Departments() {
     const [viewMode, setViewMode] = useState<'list' | 'chart'>('list');
 
     // Meta categories for tabs
-    const [activeTab, setActiveTab] = useState<'general' | 'authority' | 'functional' | 'control' | 'audit'>('general');
+    const [unitFilter, setUnitFilter] = useState<'functional' | 'branches'>('functional');
 
     // Form State
     const [formData, setFormData] = useState<any>({
         code: '',
         name: '',
+        nameHindi: '',
+        nameTamil: '',
         type: 'FUNCTIONAL',
         subType: 'DEPT',
         parentId: '',
         status: 'ACTIVE',
-        statutoryBasis: '',
-        establishmentOrderRef: '',
+        populationGroup: '',
         dateOfEstablishment: '',
-        geographicalScope: '',
-        peerGroupCode: '',
-        mandateStatement: '',
-        delegationRef: '',
-        powers: [] as string[],
-        policiesOwned: [] as string[],
-        processesOwned: [] as string[],
-        metricsAccountableFor: [] as string[],
-        misFrequency: '',
-        misSla: '',
-        riskCategory: '',
-        vigilanceSensitivity: 'NORMAL',
-        inspectionCycle: '',
-        decisionLogRetentionYears: 10,
-        auditTrailEnabled: true,
-        inspectionReplayCapable: false
+        licenseDetails: { fileName: '', uploadDate: '', status: 'NOT_UPLOADED' },
+        headsHistory: [] as { name: string, designation: string, fromDate: string, toDate: string }[]
     });
 
     useEffect(() => {
@@ -90,18 +80,18 @@ export function Departments() {
         });
         setEditingDeptId(dept.id);
         setShowForm(true);
-        setActiveTab('general');
     };
 
     const resetForm = () => {
+        const ro = departments.find(d => d.subType === 'RO');
         setFormData({
-            code: '', name: '', type: 'FUNCTIONAL', subType: 'DEPT', parentId: '', status: 'ACTIVE',
-            statutoryBasis: '', establishmentOrderRef: '', dateOfEstablishment: '', geographicalScope: '',
-            peerGroupCode: '', mandateStatement: '', delegationRef: '', powers: [],
-            policiesOwned: [], processesOwned: [], metricsAccountableFor: [],
-            misFrequency: '', misSla: '', riskCategory: '', vigilanceSensitivity: 'NORMAL',
-            inspectionCycle: '', decisionLogRetentionYears: 10, auditTrailEnabled: true,
-            inspectionReplayCapable: false
+            code: '', name: '', nameHindi: '', nameTamil: '', type: 'FUNCTIONAL', subType: 'DEPT',
+            parentId: ro ? ro.id : '',
+            status: 'ACTIVE',
+            populationGroup: '',
+            dateOfEstablishment: '',
+            licenseDetails: { fileName: '', uploadDate: '', status: 'NOT_UPLOADED' },
+            headsHistory: [] as any[]
         });
         setEditingDeptId(null);
         setShowForm(false);
@@ -153,10 +143,19 @@ export function Departments() {
         }
     };
 
-    if (loading) return <div className="p-4">Loading...</div>;
+    if (loading) return <div className="p-4">Loading Institutional Objects...</div>;
 
-    // Filter potential parents (exclude self and children ideally, but just self for now)
-    const potentialParents = departments.filter(d => d.type === 'ADMINISTRATIVE' && d.id !== editingDeptId);
+    // Filter out potential legacy residues from previous deployments
+    const visibleDepts = departments
+        .filter(d => d.code !== 'CO' && d.subType !== 'ZO')
+        .sort((a, b) => a.code.localeCompare(b.code));
+
+    // Separate functional vs branches
+    const functionalDepts = visibleDepts.filter(d => d.subType === 'DEPT' || d.subType === 'RO');
+    const branchDepts = visibleDepts.filter(d => d.subType === 'BRANCH');
+
+    const filteredList = unitFilter === 'functional' ? functionalDepts : branchDepts;
+
 
     return (
         <div className="space-y-6">
@@ -178,6 +177,27 @@ export function Departments() {
             </div>
 
             <div className="flex justify-between items-center mb-4">
+                <div className="flex bg-gray-100 p-1 rounded-lg">
+                    <button
+                        onClick={() => setUnitFilter('functional')}
+                        className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-all ${unitFilter === 'functional'
+                            ? 'bg-white text-[var(--color-brand-primary)] shadow-sm'
+                            : 'text-gray-500 hover:text-gray-900'
+                            }`}
+                    >
+                        RO Functional
+                    </button>
+                    <button
+                        onClick={() => setUnitFilter('branches')}
+                        className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-all ${unitFilter === 'branches'
+                            ? 'bg-white text-[var(--color-brand-primary)] shadow-sm'
+                            : 'text-gray-500 hover:text-gray-900'
+                            }`}
+                    >
+                        Branch Network
+                    </button>
+                </div>
+
                 <div className="flex bg-gray-100 p-1 rounded-lg">
                     <button
                         onClick={() => setViewMode('list')}
@@ -205,281 +225,221 @@ export function Departments() {
             {showForm && (
                 <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-lg mb-8">
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-bold text-gray-900">{editingDeptId ? 'Expand Institutional Profile' : 'Register New Institutional Object'}</h3>
-                        <div className="flex border-b border-gray-200">
-                            {(['general', 'authority', 'functional', 'control', 'audit'] as const).map(tab => (
-                                <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab)}
-                                    className={`px-4 py-2 text-sm font-medium border-b-2 capitalize ${activeTab === tab
-                                        ? 'border-[var(--color-brand-primary)] text-[var(--color-brand-primary)]'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                                        }`}
-                                >
-                                    {tab}
-                                </button>
-                            ))}
-                        </div>
+                        <h3 className="text-xl font-bold text-gray-900">{editingDeptId ? 'Refine Regional Object' : 'Register New Regional Object'}</h3>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        {activeTab === 'general' && (
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Unit Code (Immutable)</label>
-                                        <input
-                                            type="text"
-                                            value={formData.code}
-                                            onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-500 bg-gray-50 font-mono"
-                                            required
-                                            disabled={!!editingDeptId}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Official Name</label>
-                                        <input
-                                            type="text"
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-500"
-                                            required
-                                        />
-                                    </div>
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="col-span-2 md:col-span-1">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Unit Code</label>
+                                    <input
+                                        type="text"
+                                        value={formData.code}
+                                        onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                                        className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-500 font-mono"
+                                        required
+                                    />
                                 </div>
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Tier</label>
-                                        <select
-                                            value={formData.type}
-                                            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-200 rounded"
-                                        >
-                                            <option value="FUNCTIONAL">Functional Dept</option>
-                                            <option value="ADMINISTRATIVE">Administrative Unit</option>
-                                            <option value="EXECUTIVE">Executive Unit</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Governance subType</label>
-                                        <select
-                                            value={formData.subType}
-                                            onChange={(e) => setFormData({ ...formData, subType: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-200 rounded"
-                                        >
-                                            <option value="CO">Central Office</option>
-                                            <option value="ZO">Zonal Office</option>
-                                            <option value="RO">Regional Office</option>
-                                            <option value="BRANCH">Branch</option>
-                                            <option value="DEPT">Department</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Statutory Basis</label>
-                                        <input
-                                            type="text"
-                                            value={formData.statutoryBasis}
-                                            onChange={(e) => setFormData({ ...formData, statutoryBasis: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-200 rounded"
-                                            placeholder="e.g. Banking Act 1949"
-                                        />
-                                    </div>
+                                <div className="col-span-2 md:col-span-1">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Official Name (English)</label>
+                                    <input
+                                        type="text"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-500"
+                                        required
+                                    />
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="col-span-2 md:col-span-1">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Official Name (Hindi)</label>
+                                    <input
+                                        type="text"
+                                        value={formData.nameHindi}
+                                        onChange={(e) => setFormData({ ...formData, nameHindi: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-500 font-hindi"
+                                        placeholder="जैसे: क्षेत्रीय कार्यालय"
+                                    />
+                                </div>
+                                <div className="col-span-2 md:col-span-1">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Official Name (Tamil)</label>
+                                    <input
+                                        type="text"
+                                        value={formData.nameTamil}
+                                        onChange={(e) => setFormData({ ...formData, nameTamil: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-200 rounded focus:ring-1 focus:ring-blue-500 font-tamil"
+                                        placeholder="எ.கா: மண்டல அலுவலகம்"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4">
+                                <div className="col-span-2 md:col-span-1">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Unit Categorization</label>
+                                    <select
+                                        value={`${formData.type}:${formData.subType}`}
+                                        onChange={(e) => {
+                                            const [type, subType] = e.target.value.split(':');
+                                            setFormData({ ...formData, type, subType });
+                                        }}
+                                        className="w-full px-3 py-2 border border-gray-200 rounded"
+                                    >
+                                        <option value="FUNCTIONAL:DEPT">Regional Department</option>
+                                        <option value="EXECUTIVE:BRANCH">Branch Office</option>
+                                    </select>
+                                </div>
+                                {formData.subType === 'BRANCH' && (
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Parent Institutional Object</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Population Category</label>
                                         <select
-                                            value={formData.parentId}
-                                            onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-200 rounded"
+                                            value={formData.populationGroup}
+                                            onChange={(e) => setFormData({ ...formData, populationGroup: e.target.value })}
+                                            className="w-full px-3 py-2 border border-blue-200 bg-blue-50/30 rounded focus:ring-1 focus:ring-blue-500 shadow-sm transition-all"
+                                            required={formData.subType === 'BRANCH'}
                                         >
-                                            <option value="">(Root)</option>
-                                            {potentialParents.map(p => (
-                                                <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
-                                            ))}
+                                            <option value="">-- Select Category --</option>
+                                            <option value="METRO">Metro</option>
+                                            <option value="URBAN">Urban</option>
+                                            <option value="SEMI_URBAN">Semi Urban</option>
+                                            <option value="RURAL">Rural</option>
                                         </select>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Establishment Date</label>
-                                        <input
-                                            type="date"
-                                            value={formData.dateOfEstablishment}
-                                            onChange={(e) => setFormData({ ...formData, dateOfEstablishment: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-200 rounded"
-                                        />
+                                )}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Establishment Date</label>
+                                    <input
+                                        type="date"
+                                        value={formData.dateOfEstablishment}
+                                        onChange={(e) => setFormData({ ...formData, dateOfEstablishment: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-200 rounded"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Parent Institutional Object</label>
+                                    <div className="px-3 py-2 border border-gray-100 bg-gray-50/50 rounded text-sm text-gray-600 flex items-center">
+                                        <span className="w-2 h-2 rounded-full bg-blue-400 mr-2"></span>
+                                        {departments.find(d => d.subType === 'RO')?.name || 'Regional Office'} (Locked)
                                     </div>
                                 </div>
                             </div>
-                        )}
 
-                        {activeTab === 'authority' && (
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Mandate Statement (Institutional Charter)</label>
-                                    <textarea
-                                        value={formData.mandateStatement}
-                                        onChange={(e) => setFormData({ ...formData, mandateStatement: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-200 rounded h-24"
-                                        placeholder="Define the core reason for existence and accountability..."
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Decision Powers (Comma separated)</label>
-                                    <input
-                                        type="text"
-                                        value={Array.isArray(formData.powers) ? formData.powers.join(', ') : ''}
-                                        onChange={(e) => setFormData({ ...formData, powers: e.target.value.split(',').map(s => s.trim()) })}
-                                        className="w-full px-3 py-2 border border-gray-200 rounded"
-                                        placeholder="SANCTION, APPROVE, VETO, RECOMMEND..."
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Delegation Reference Circular</label>
-                                    <input
-                                        type="text"
-                                        value={formData.delegationRef}
-                                        onChange={(e) => setFormData({ ...formData, delegationRef: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-200 rounded"
-                                        placeholder="e.g. CO/CREDIT/2024/45"
-                                    />
+                            <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-lg">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h4 className="text-sm font-bold text-blue-900">License Details</h4>
+                                        <p className="text-xs text-blue-700 mt-1">Upload banking license or establishment authority documents</p>
+                                    </div>
+                                    <div className="flex items-center space-x-3">
+                                        {formData.licenseDetails?.status === 'UPLOADED' ? (
+                                            <div className="flex items-center text-xs text-green-700 font-medium">
+                                                <span className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
+                                                {formData.licenseDetails.fileName}
+                                            </div>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, licenseDetails: { fileName: 'LICENSE_2024.pdf', uploadDate: new Date().toISOString(), status: 'UPLOADED' } })}
+                                                className="px-3 py-1.5 bg-white border border-blue-200 text-blue-600 text-xs font-bold rounded hover:bg-blue-50 transition-colors shadow-sm"
+                                            >
+                                                Upload License
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        )}
 
-                        {activeTab === 'functional' && (
                             <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Policies Owned (Comma separated)</label>
-                                    <input
-                                        type="text"
-                                        value={Array.isArray(formData.policiesOwned) ? formData.policiesOwned.join(', ') : ''}
-                                        onChange={(e) => setFormData({ ...formData, policiesOwned: e.target.value.split(',').map(s => s.trim()) })}
-                                        className="w-full px-3 py-2 border border-gray-200 rounded"
-                                    />
+                                <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                                    <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">History of Heads</h4>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({
+                                            ...formData,
+                                            headsHistory: [...(formData.headsHistory || []), { name: '', designation: '', fromDate: '', toDate: '' }]
+                                        })}
+                                        className="text-[var(--color-brand-primary)] hover:text-[var(--color-brand-secondary)] text-xs font-bold flex items-center"
+                                    >
+                                        <Plus className="w-3 h-3 mr-1" /> Add Entry
+                                    </button>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Processes Owned</label>
-                                    <input
-                                        type="text"
-                                        value={Array.isArray(formData.processesOwned) ? formData.processesOwned.join(', ') : ''}
-                                        onChange={(e) => setFormData({ ...formData, processesOwned: e.target.value.split(',').map(s => s.trim()) })}
-                                        className="w-full px-3 py-2 border border-gray-200 rounded"
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Geographical Scope</label>
-                                        <select
-                                            value={formData.geographicalScope}
-                                            onChange={(e) => setFormData({ ...formData, geographicalScope: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-200 rounded"
-                                        >
-                                            <option value="PAN_INDIA">Pan India</option>
-                                            <option value="ZONAL">Zonal</option>
-                                            <option value="REGIONAL">Regional</option>
-                                            <option value="BRANCH_AREA">Branch Area</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Peer Group Code</label>
-                                        <input
-                                            type="text"
-                                            value={formData.peerGroupCode}
-                                            onChange={(e) => setFormData({ ...formData, peerGroupCode: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-200 rounded"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
 
-                        {activeTab === 'control' && (
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Risk Category</label>
-                                        <select
-                                            value={formData.riskCategory}
-                                            onChange={(e) => setFormData({ ...formData, riskCategory: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-200 rounded"
-                                        >
-                                            <option value="LOW">Low</option>
-                                            <option value="MEDIUM">Medium</option>
-                                            <option value="HIGH">High</option>
-                                            <option value="SYSTEMIC">Systemic</option>
-                                        </select>
+                                {formData.headsHistory?.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {formData.headsHistory.map((head: any, index: number) => (
+                                            <div key={index} className="grid grid-cols-4 gap-3 p-3 bg-gray-50/50 border border-gray-100 rounded-lg relative group">
+                                                <div>
+                                                    <label className="block text-[8px] font-bold text-gray-500 uppercase mb-1">Name</label>
+                                                    <input
+                                                        type="text"
+                                                        value={head.name}
+                                                        onChange={(e) => {
+                                                            const newHistory = [...formData.headsHistory];
+                                                            newHistory[index].name = e.target.value;
+                                                            setFormData({ ...formData, headsHistory: newHistory });
+                                                        }}
+                                                        className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-blue-500"
+                                                        placeholder="Full Name"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[8px] font-bold text-gray-500 uppercase mb-1">Designation</label>
+                                                    <input
+                                                        type="text"
+                                                        value={head.designation}
+                                                        onChange={(e) => {
+                                                            const newHistory = [...formData.headsHistory];
+                                                            newHistory[index].designation = e.target.value;
+                                                            setFormData({ ...formData, headsHistory: newHistory });
+                                                        }}
+                                                        className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-blue-500"
+                                                        placeholder="e.g. Chief Manager"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[8px] font-bold text-gray-500 uppercase mb-1">From Date</label>
+                                                    <input
+                                                        type="date"
+                                                        value={head.fromDate}
+                                                        onChange={(e) => {
+                                                            const newHistory = [...formData.headsHistory];
+                                                            newHistory[index].fromDate = e.target.value;
+                                                            setFormData({ ...formData, headsHistory: newHistory });
+                                                        }}
+                                                        className="w-full px-2 py-1 text-xs border border-gray-200 rounded"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[8px] font-bold text-gray-500 uppercase mb-1">To Date</label>
+                                                    <input
+                                                        type="date"
+                                                        value={head.toDate}
+                                                        onChange={(e) => {
+                                                            const newHistory = [...formData.headsHistory];
+                                                            newHistory[index].toDate = e.target.value;
+                                                            setFormData({ ...formData, headsHistory: newHistory });
+                                                        }}
+                                                        className="w-full px-2 py-1 text-xs border border-gray-200 rounded"
+                                                    />
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const newHistory = formData.headsHistory.filter((_: any, i: number) => i !== index);
+                                                        setFormData({ ...formData, headsHistory: newHistory });
+                                                    }}
+                                                    className="absolute -right-2 -top-2 bg-red-100 text-red-600 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        ))}
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Vigilance Sensitivity</label>
-                                        <select
-                                            value={formData.vigilanceSensitivity}
-                                            onChange={(e) => setFormData({ ...formData, vigilanceSensitivity: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-200 rounded"
-                                        >
-                                            <option value="NORMAL">Normal</option>
-                                            <option value="SENSITIVE">Sensitive</option>
-                                            <option value="CRITICAL">Critical</option>
-                                        </select>
+                                ) : (
+                                    <div className="text-center py-6 border-2 border-dashed border-gray-100 rounded-lg">
+                                        <p className="text-xs text-gray-400 italic">No head tenure history recorded yet.</p>
                                     </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Inspection Cycle</label>
-                                    <input
-                                        type="text"
-                                        value={formData.inspectionCycle}
-                                        onChange={(e) => setFormData({ ...formData, inspectionCycle: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-200 rounded"
-                                        placeholder="e.g. Annual, Quarterly, Risk Based"
-                                    />
-                                </div>
+                                )}
                             </div>
-                        )}
-
-                        {activeTab === 'audit' && (
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">MIS Frequency</label>
-                                        <input
-                                            type="text"
-                                            value={formData.misFrequency}
-                                            onChange={(e) => setFormData({ ...formData, misFrequency: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-200 rounded"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1 font-mono uppercase text-[10px]">Submission SLA</label>
-                                        <input
-                                            type="text"
-                                            value={formData.misSla}
-                                            onChange={(e) => setFormData({ ...formData, misSla: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-200 rounded"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex items-center space-x-6 py-2">
-                                    <label className="flex items-center text-sm font-medium text-gray-700 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.auditTrailEnabled}
-                                            onChange={(e) => setFormData({ ...formData, auditTrailEnabled: e.target.checked })}
-                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-2"
-                                        />
-                                        Audit Trail Enabled
-                                    </label>
-                                    <label className="flex items-center text-sm font-medium text-gray-700 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.inspectionReplayCapable}
-                                            onChange={(e) => setFormData({ ...formData, inspectionReplayCapable: e.target.checked })}
-                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-2"
-                                        />
-                                        Inspection Replay Capable
-                                    </label>
-                                </div>
-                            </div>
-                        )}
+                        </div>
 
                         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
                             <button
@@ -501,7 +461,7 @@ export function Departments() {
             )}
 
             {viewMode === 'chart' ? (
-                <OrgChart data={departments} />
+                <OrgChart data={departments} filter={unitFilter} />
             ) : (
                 <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
                     <table className="min-w-full divide-y divide-gray-200">
@@ -515,7 +475,7 @@ export function Departments() {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {departments.map((dept) => (
+                            {filteredList.map((dept) => (
                                 <tr key={dept.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
@@ -523,8 +483,12 @@ export function Departments() {
                                             <span className="text-sm font-medium text-gray-900">{dept.code}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        {dept.name}
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm font-medium text-gray-900">{dept.name}</div>
+                                        <div className="flex gap-2 mt-1">
+                                            {dept.nameHindi && <span className="text-[10px] font-medium text-blue-800 bg-blue-50 px-1.5 py-0.5 rounded font-hindi">{dept.nameHindi}</span>}
+                                            {dept.nameTamil && <span className="text-[10px] font-medium text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded font-tamil">{dept.nameTamil}</span>}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`px-2 py-1 text-xs font-medium rounded 
@@ -533,6 +497,13 @@ export function Departments() {
                                                     'bg-blue-100 text-blue-800'}`}>
                                             {dept.subType || dept.type}
                                         </span>
+                                        {dept.subType === 'BRANCH' && dept.populationGroup && (
+                                            <div className="mt-1">
+                                                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">
+                                                    {dept.populationGroup.replace('_', ' ')}
+                                                </span>
+                                            </div>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {dept.parent ? (
@@ -554,11 +525,13 @@ export function Departments() {
                                             </Link>
                                             <button
                                                 onClick={() => handleEdit(dept)}
-                                                className="text-[var(--color-brand-primary)] hover:text-[var(--color-brand-secondary)] flex items-center"
+                                                className={`flex items-center ${dept.subType === 'RO' ? 'text-gray-400 cursor-not-allowed' : 'text-[var(--color-brand-primary)] hover:text-[var(--color-brand-secondary)]'}`}
+                                                disabled={dept.subType === 'RO'}
+                                                title={dept.subType === 'RO' ? 'Edit via Region Master' : 'Edit Unit'}
                                             >
                                                 <Edit2 className="w-4 h-4 mr-1" /> Edit
                                             </button>
-                                            {dept.code !== 'CO' && dept.code !== 'ADMIN' && (
+                                            {dept.subType !== 'RO' && (
                                                 <button
                                                     onClick={() => handleDelete(dept.id, dept.name)}
                                                     className="text-red-600 hover:text-red-900 flex items-center"

@@ -47,4 +47,42 @@ export class GovernanceService {
             where: { id }
         });
     }
+
+    async createContext(data: { decisionTypeName: string; functionalScopeName: string }) {
+        const dtCode = data.decisionTypeName.toUpperCase().replace(/\s+/g, '_');
+        const fsCode = data.functionalScopeName.toUpperCase().replace(/\s+/g, '_');
+
+        // 1. Ensure Decision Type Exists
+        const decisionType = await this.prisma.decisionType.upsert({
+            where: { code: dtCode },
+            update: {},
+            create: { code: dtCode, name: data.decisionTypeName, category: 'ADMIN' }
+        });
+
+        // 2. Ensure Functional Scope Exists
+        const functionalScope = await this.prisma.functionalScope.upsert({
+            where: { code: fsCode },
+            update: {},
+            create: { code: fsCode, name: data.functionalScopeName }
+        });
+
+        // 3. Create a Default Rule so it appears in allowed-contexts
+        // We attach it to the first found designation for simplicity (e.g. GM)
+        const defaultAuth = await this.prisma.designation.findFirst();
+        if (!defaultAuth) {
+            // Fallback if no designation exists (unlikely after seed)
+            throw new Error('Cannot create default rule: No designations found.');
+        }
+
+        return this.prisma.doARule.create({
+            data: {
+                authorityBodyType: 'DESIGNATION',
+                authorityBodyId: defaultAuth.id,
+                decisionTypeId: decisionType.id,
+                functionalScopeId: functionalScope.id,
+                limitMin: 0,
+                limitMax: 1000000, // Default 10 Lakhs
+            }
+        });
+    }
 }

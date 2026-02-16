@@ -32,6 +32,11 @@ export class DecisionController {
         return this.decisionService.performAction(id, body.actorPostingId, body.action, body.notes, body.evidenceRefs);
     }
 
+    @Get(':id')
+    async findOne(@Param('id') id: string) {
+        return this.decisionService.findOne(id);
+    }
+
     @Get()
     async findAll(@Query('officeId') officeId?: string) {
         return this.decisionService.findAll(officeId);

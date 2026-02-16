@@ -37,10 +37,56 @@ export class AdminController {
         return this.adminService.getDesignations();
     }
 
+    @Put('designations/:id')
+    updateDesg(@Param('id') id: string, @Body() body: any) {
+        return this.adminService.updateDesignation(id, body);
+    }
+
+    @Delete('designations/:id')
+    deleteDesg(@Param('id') id: string) {
+        return this.adminService.deleteDesignation(id);
+    }
+
+    // Regions
+    @Get('regions')
+    getRegions() {
+        return this.adminService.getRegions();
+    }
+
+    @Post('regions')
+    createRegion(@Body() body: any) {
+        return this.adminService.createRegion(body);
+    }
+
+    @Put('regions/:id')
+    updateRegion(@Param('id') id: string, @Body() body: any) {
+        return this.adminService.updateRegion(id, body);
+    }
+
+    @Delete('regions/:id')
+    deleteRegion(@Param('id') id: string) {
+        return this.adminService.deleteRegion(id);
+    }
+
     // Users
     @Post('users')
     createUser(@Body() body: any) {
         return this.adminService.createUser(body);
+    }
+
+    @Put('users/:id')
+    updateUser(@Param('id') id: string, @Body() body: any) {
+        return this.adminService.updateUser(id, body);
+    }
+
+    @Post('users/:id/cleanup')
+    cleanupUserRoles(@Param('id') id: string) {
+        return this.adminService.cleanupUserRoles(id);
+    }
+
+    @Delete('users/:id')
+    deleteUser(@Param('id') id: string) {
+        return this.adminService.deleteUser(id);
     }
 
     @Post('postings')
@@ -56,6 +102,16 @@ export class AdminController {
     @Post('tenures')
     assignTenure(@Body() body: any) {
         return this.adminService.assignTenure(body);
+    }
+
+    @Delete('postings/:id')
+    deletePosting(@Param('id') id: string) {
+        return this.adminService.deletePosting(id);
+    }
+
+    @Delete('tenures/:id')
+    deleteTenure(@Param('id') id: string) {
+        return this.adminService.deleteTenure(id);
     }
 
     // Rules

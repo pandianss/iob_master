@@ -11,18 +11,22 @@ export declare class AuthService {
                     createdAt: Date;
                     updatedAt: Date;
                     title: string;
+                    titleHindi: string | null;
+                    titleTamil: string | null;
                     rank: number;
-                    roleAbstraction: string;
                 };
-                department: {
+                departments: {
                     id: string;
-                    name: string;
                     createdAt: Date;
                     updatedAt: Date;
+                    name: string;
                     status: string;
                     code: string;
+                    nameHindi: string | null;
+                    nameTamil: string | null;
                     type: string;
                     subType: string | null;
+                    populationGroup: string | null;
                     parentId: string | null;
                     statutoryBasis: string | null;
                     establishmentOrderRef: string | null;
@@ -63,47 +67,52 @@ export declare class AuthService {
                     documentRetentionPolicy: string | null;
                     auditTrailEnabled: boolean;
                     inspectionReplayCapable: boolean;
-                };
+                }[];
             } & {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
-                status: string;
                 userId: string;
-                deptId: string;
                 regionId: string;
                 designationId: string;
                 validFrom: Date;
                 validTo: Date | null;
+                status: string;
             })[];
             tenures: ({
                 office: {
                     id: string;
-                    name: string;
                     createdAt: Date;
                     updatedAt: Date;
-                    code: string;
+                    name: string;
+                    code: string | null;
                     tier: import(".prisma/client").$Enums.OfficeTier;
-                    departmentId: string | null;
+                    authorityLine: string;
                     vetoPower: boolean;
                 };
             } & {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
-                status: string;
                 userId: string;
+                status: string;
                 officeId: string;
                 startDate: Date;
                 endDate: Date | null;
             })[];
         } & {
             id: string;
-            identityRef: string;
-            name: string;
-            email: string;
             createdAt: Date;
             updatedAt: Date;
+            name: string;
+            nameHindi: string | null;
+            nameTamil: string | null;
+            identityRef: string;
+            email: string;
+            mobile: string | null;
+            dob: Date | null;
+            gender: string | null;
+            role: string;
         };
         role: string;
     }>;

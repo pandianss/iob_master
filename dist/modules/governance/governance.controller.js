@@ -35,6 +35,9 @@ let GovernanceController = class GovernanceController {
     deleteParameter(id) {
         return this.governanceService.deleteParameter(id);
     }
+    createContext(body) {
+        return this.governanceService.createContext(body);
+    }
 };
 exports.GovernanceController = GovernanceController;
 __decorate([
@@ -71,6 +74,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], GovernanceController.prototype, "deleteParameter", null);
+__decorate([
+    (0, common_1.Post)('contexts'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], GovernanceController.prototype, "createContext", null);
 exports.GovernanceController = GovernanceController = __decorate([
     (0, common_1.Controller)('governance'),
     __metadata("design:paramtypes", [governance_service_1.GovernanceService])

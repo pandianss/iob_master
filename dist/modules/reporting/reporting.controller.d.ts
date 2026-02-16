@@ -9,23 +9,29 @@ export declare class ReportingController {
                 createdAt: Date;
                 updatedAt: Date;
                 title: string;
+                titleHindi: string | null;
+                titleTamil: string | null;
                 rank: number;
-                roleAbstraction: string;
             };
             user: {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
                 name: string;
+                nameHindi: string | null;
+                nameTamil: string | null;
                 identityRef: string;
                 email: string;
+                mobile: string | null;
+                dob: Date | null;
+                gender: string | null;
+                role: string;
             };
         } & {
             id: string;
             createdAt: Date;
             updatedAt: Date;
             userId: string;
-            deptId: string;
             regionId: string;
             designationId: string;
             validFrom: Date;
@@ -60,10 +66,39 @@ export declare class ReportingController {
         initiatorPostingId: string;
         authRuleId: string | null;
     })[]>;
+    getInboxStats(identityRef: string): Promise<{
+        pending: number;
+        escalated: number;
+    }>;
     getDoABreaches(): Promise<(import(".prisma/client").Prisma.PickEnumerable<import(".prisma/client").Prisma.DecisionGroupByOutputType, "deptContextId"[]> & {
         _count: {
             id: number;
         };
     })[]>;
     getDeptCompliance(deptCode: string): Promise<Record<string, number> | null>;
+    getSnapshot(date?: string): Promise<any>;
+    getComparison(t: string, tMinus1: string, monthEnd: string, fyEnd: string, fyStart: string): Promise<{
+        snapshots: {
+            t: any;
+            tMinus1: any;
+            monthEnd: any;
+            fyEnd: any;
+            fyStart: any;
+        };
+        targets: any;
+    }>;
+    saveTarget(data: {
+        metric: string;
+        timeframe: string;
+        targetValue: number;
+        targetDate: string;
+    }): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        metric: string;
+        timeframe: string;
+        targetValue: number;
+        targetDate: Date;
+    }>;
 }

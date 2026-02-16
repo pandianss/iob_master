@@ -354,7 +354,21 @@ export const IngestionPage = () => {
                                         <tr>
                                             {Object.keys(previewBatch.records[0].data).map((header, idx) => {
                                                 const val = previewBatch.records[0].data[header];
-                                                const type = typeof val === 'number' ? 'Number' : 'String';
+                                                let type = typeof val === 'number' ? 'Number' : 'String';
+
+                                                // Check if value is an ISO date string
+                                                if (type === 'String' && typeof val === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(val)) {
+                                                    type = 'Date';
+                                                }
+
+                                                // Detect Lakhs/Crores from header name
+                                                const lowerHeader = header.toLowerCase();
+                                                if (lowerHeader.includes('lakh') || lowerHeader === 'p & l') {
+                                                    type = 'Lakhs';
+                                                } else if (lowerHeader.includes('crore')) {
+                                                    type = 'Crores';
+                                                }
+
                                                 return (
                                                     <th key={idx} className="px-4 py-2 border-b whitespace-nowrap">
                                                         <div className="flex flex-col">

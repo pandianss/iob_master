@@ -6,7 +6,7 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
     private browser: puppeteer.Browser;
 
     async onModuleInit() {
-        await this.launchBrowser();
+        // Lazy load browser on demand instead of startup
     }
 
     async onModuleDestroy() {
@@ -16,6 +16,7 @@ export class PdfService implements OnModuleInit, OnModuleDestroy {
     }
 
     private async launchBrowser() {
+        if (this.browser) return; // double-check
         this.browser = await puppeteer.launch({
             headless: true, // New Headless mode
             args: ['--no-sandbox', '--disable-setuid-sandbox', '--font-render-hinting=none'],

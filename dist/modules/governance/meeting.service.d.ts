@@ -84,8 +84,9 @@ export declare class MeetingService {
                 createdAt: Date;
                 updatedAt: Date;
                 title: string;
+                titleHindi: string | null;
+                titleTamil: string | null;
                 rank: number;
-                roleAbstraction: string;
             };
         } & {
             id: string;

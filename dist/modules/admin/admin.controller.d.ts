@@ -4,14 +4,14 @@ export declare class AdminController {
     constructor(adminService: AdminService);
     createDept(body: any): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
-        status: string;
         code: string;
+        name: string;
+        nameHindi: string | null;
+        nameTamil: string | null;
         type: string;
         subType: string | null;
-        parentId: string | null;
+        populationGroup: string | null;
+        status: string;
         statutoryBasis: string | null;
         establishmentOrderRef: string | null;
         dateOfEstablishment: Date | null;
@@ -51,18 +51,21 @@ export declare class AdminController {
         documentRetentionPolicy: string | null;
         auditTrailEnabled: boolean;
         inspectionReplayCapable: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        parentId: string | null;
     }>;
     getDepts(): Promise<({
         parent: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            status: string;
             code: string;
+            name: string;
+            nameHindi: string | null;
+            nameTamil: string | null;
             type: string;
             subType: string | null;
-            parentId: string | null;
+            populationGroup: string | null;
+            status: string;
             statutoryBasis: string | null;
             establishmentOrderRef: string | null;
             dateOfEstablishment: Date | null;
@@ -102,17 +105,20 @@ export declare class AdminController {
             documentRetentionPolicy: string | null;
             auditTrailEnabled: boolean;
             inspectionReplayCapable: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            parentId: string | null;
         } | null;
         children: {
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
-            name: string;
-            status: string;
             code: string;
+            name: string;
+            nameHindi: string | null;
+            nameTamil: string | null;
             type: string;
             subType: string | null;
-            parentId: string | null;
+            populationGroup: string | null;
+            status: string;
             statutoryBasis: string | null;
             establishmentOrderRef: string | null;
             dateOfEstablishment: Date | null;
@@ -152,17 +158,20 @@ export declare class AdminController {
             documentRetentionPolicy: string | null;
             auditTrailEnabled: boolean;
             inspectionReplayCapable: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            parentId: string | null;
         }[];
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
-        status: string;
         code: string;
+        name: string;
+        nameHindi: string | null;
+        nameTamil: string | null;
         type: string;
         subType: string | null;
-        parentId: string | null;
+        populationGroup: string | null;
+        status: string;
         statutoryBasis: string | null;
         establishmentOrderRef: string | null;
         dateOfEstablishment: Date | null;
@@ -202,17 +211,20 @@ export declare class AdminController {
         documentRetentionPolicy: string | null;
         auditTrailEnabled: boolean;
         inspectionReplayCapable: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        parentId: string | null;
     })[]>;
     updateDept(id: string, body: any): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
-        status: string;
         code: string;
+        name: string;
+        nameHindi: string | null;
+        nameTamil: string | null;
         type: string;
         subType: string | null;
-        parentId: string | null;
+        populationGroup: string | null;
+        status: string;
         statutoryBasis: string | null;
         establishmentOrderRef: string | null;
         dateOfEstablishment: Date | null;
@@ -252,17 +264,20 @@ export declare class AdminController {
         documentRetentionPolicy: string | null;
         auditTrailEnabled: boolean;
         inspectionReplayCapable: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        parentId: string | null;
     }>;
     deleteDept(id: string): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
-        name: string;
-        status: string;
         code: string;
+        name: string;
+        nameHindi: string | null;
+        nameTamil: string | null;
         type: string;
         subType: string | null;
-        parentId: string | null;
+        populationGroup: string | null;
+        status: string;
         statutoryBasis: string | null;
         establishmentOrderRef: string | null;
         dateOfEstablishment: Date | null;
@@ -302,55 +317,173 @@ export declare class AdminController {
         documentRetentionPolicy: string | null;
         auditTrailEnabled: boolean;
         inspectionReplayCapable: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        parentId: string | null;
     }>;
     createDesg(body: any): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
         title: string;
+        titleHindi: string | null;
+        titleTamil: string | null;
         rank: number;
-        roleAbstraction: string;
     }>;
     getDesgs(): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
         title: string;
+        titleHindi: string | null;
+        titleTamil: string | null;
         rank: number;
-        roleAbstraction: string;
     }[]>;
-    createUser(body: any): Promise<{
+    updateDesg(id: string, body: any): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        title: string;
+        titleHindi: string | null;
+        titleTamil: string | null;
+        rank: number;
+    }>;
+    deleteDesg(id: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        title: string;
+        titleHindi: string | null;
+        titleTamil: string | null;
+        rank: number;
+    }>;
+    getRegions(): Promise<{
+        id: string;
+        code: string;
         name: string;
+        nameHindi: string | null;
+        nameTamil: string | null;
+        status: string;
+        createdAt: Date;
+        updatedAt: Date;
+    }[]>;
+    createRegion(body: any): Promise<{
+        id: string;
+        code: string;
+        name: string;
+        nameHindi: string | null;
+        nameTamil: string | null;
+        status: string;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    updateRegion(id: string, body: any): Promise<{
+        id: string;
+        code: string;
+        name: string;
+        nameHindi: string | null;
+        nameTamil: string | null;
+        status: string;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    deleteRegion(id: string): Promise<{
+        id: string;
+        code: string;
+        name: string;
+        nameHindi: string | null;
+        nameTamil: string | null;
+        status: string;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    createUser(body: any): Promise<{
+        id: string;
+        name: string;
+        nameHindi: string | null;
+        nameTamil: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         identityRef: string;
         email: string;
+        mobile: string | null;
+        dob: Date | null;
+        gender: string | null;
+        role: string;
+    }>;
+    updateUser(id: string, body: any): Promise<{
+        id: string;
+        name: string;
+        nameHindi: string | null;
+        nameTamil: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        identityRef: string;
+        email: string;
+        mobile: string | null;
+        dob: Date | null;
+        gender: string | null;
+        role: string;
+    }>;
+    cleanupUserRoles(id: string): Promise<{
+        success: boolean;
+    }>;
+    deleteUser(id: string): Promise<{
+        id: string;
+        name: string;
+        nameHindi: string | null;
+        nameTamil: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        identityRef: string;
+        email: string;
+        mobile: string | null;
+        dob: Date | null;
+        gender: string | null;
+        role: string;
     }>;
     assignPosting(body: any): Promise<{
         id: string;
+        status: string;
         createdAt: Date;
         updatedAt: Date;
+        validFrom: Date;
         userId: string;
-        deptId: string;
         regionId: string;
         designationId: string;
-        validFrom: Date;
         validTo: Date | null;
-        status: string;
     }>;
     getUsers(): Promise<({
         postings: ({
-            department: {
+            region: {
+                id: string;
+                code: string;
+                name: string;
+                nameHindi: string | null;
+                nameTamil: string | null;
+                status: string;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+            designation: {
                 id: string;
                 createdAt: Date;
                 updatedAt: Date;
-                name: string;
-                status: string;
+                title: string;
+                titleHindi: string | null;
+                titleTamil: string | null;
+                rank: number;
+            };
+            departments: {
+                id: string;
                 code: string;
+                name: string;
+                nameHindi: string | null;
+                nameTamil: string | null;
                 type: string;
                 subType: string | null;
-                parentId: string | null;
+                populationGroup: string | null;
+                status: string;
                 statutoryBasis: string | null;
                 establishmentOrderRef: string | null;
                 dateOfEstablishment: Date | null;
@@ -390,88 +523,100 @@ export declare class AdminController {
                 documentRetentionPolicy: string | null;
                 auditTrailEnabled: boolean;
                 inspectionReplayCapable: boolean;
-            };
-            region: {
-                id: string;
                 createdAt: Date;
                 updatedAt: Date;
-                name: string;
-                status: string;
-                code: string;
-                legacyZoneInfo: string | null;
-            };
-            designation: {
-                id: string;
-                createdAt: Date;
-                updatedAt: Date;
-                title: string;
-                rank: number;
-                roleAbstraction: string;
-            };
+                parentId: string | null;
+            }[];
         } & {
             id: string;
+            status: string;
             createdAt: Date;
             updatedAt: Date;
+            validFrom: Date;
             userId: string;
-            deptId: string;
             regionId: string;
             designationId: string;
-            validFrom: Date;
             validTo: Date | null;
-            status: string;
         })[];
         tenures: ({
             office: {
                 id: string;
+                code: string | null;
+                name: string;
                 createdAt: Date;
                 updatedAt: Date;
-                name: string;
-                code: string;
-                departmentId: string | null;
                 tier: import(".prisma/client").$Enums.OfficeTier;
+                authorityLine: string;
                 vetoPower: boolean;
             };
         } & {
             id: string;
+            status: string;
             createdAt: Date;
             updatedAt: Date;
-            userId: string;
-            status: string;
-            officeId: string;
             startDate: Date;
+            userId: string;
+            officeId: string;
             endDate: Date | null;
         })[];
     } & {
         id: string;
+        name: string;
+        nameHindi: string | null;
+        nameTamil: string | null;
         createdAt: Date;
         updatedAt: Date;
-        name: string;
         identityRef: string;
         email: string;
+        mobile: string | null;
+        dob: Date | null;
+        gender: string | null;
+        role: string;
     })[]>;
     assignTenure(body: any): Promise<{
         id: string;
+        status: string;
         createdAt: Date;
         updatedAt: Date;
-        userId: string;
-        status: string;
-        officeId: string;
         startDate: Date;
+        userId: string;
+        officeId: string;
+        endDate: Date | null;
+    }>;
+    deletePosting(id: string): Promise<{
+        id: string;
+        status: string;
+        createdAt: Date;
+        updatedAt: Date;
+        validFrom: Date;
+        userId: string;
+        regionId: string;
+        designationId: string;
+        validTo: Date | null;
+    }>;
+    deleteTenure(id: string): Promise<{
+        id: string;
+        status: string;
+        createdAt: Date;
+        updatedAt: Date;
+        startDate: Date;
+        userId: string;
+        officeId: string;
         endDate: Date | null;
     }>;
     createRule(body: any): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
         authorityBodyType: string;
         authorityBodyId: string;
-        decisionTypeId: string;
-        functionalScopeId: string;
         limitMin: import("@prisma/client/runtime/library").Decimal | null;
         limitMax: import("@prisma/client/runtime/library").Decimal | null;
         currency: string;
         requiresEvidence: boolean;
         isEscalationMandatory: boolean;
-        createdAt: Date;
-        updatedAt: Date;
+        decisionTypeId: string;
+        functionalScopeId: string;
     }>;
     getSystemUser(): {
         username: string;

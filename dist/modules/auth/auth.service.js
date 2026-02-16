@@ -24,7 +24,7 @@ let AuthService = class AuthService {
                 postings: {
                     include: {
                         designation: true,
-                        department: true
+                        departments: true,
                     }
                 },
                 tenures: {

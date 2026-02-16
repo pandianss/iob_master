@@ -1,7 +1,12 @@
-
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
-import { Office, Tenure } from '@prisma/client';
+
+export interface OfficeResult {
+    success: boolean;
+    reason?: 'NOT_FOUND' | 'HAS_ACTIVE_OCCUPANTS' | 'SYSTEM_ERROR';
+    data?: any;
+    message?: string;
+}
 
 @Injectable()
 export class OfficeService {
@@ -9,21 +14,26 @@ export class OfficeService {
 
     async findAll() {
         return this.prisma.office.findMany({
-            include: { department: true }
+            include: { departments: true }
         });
     }
 
-    async findByCode(code: string) {
-        return this.prisma.office.findUnique({
-            where: { code },
-            include: { department: true }
-        });
+    async findByCode(code: string): Promise<OfficeResult> {
+        try {
+            const office = await this.prisma.office.findUnique({
+                where: { code },
+                include: { departments: true }
+            });
+            if (!office) return { success: false, reason: 'NOT_FOUND' };
+            return { success: true, data: office };
+        } catch (error) {
+            return { success: false, reason: 'SYSTEM_ERROR' };
+        }
     }
 
-    async getActiveTenure(userId: string): Promise<Tenure & { office: Office } | null> {
+    async getActiveTenure(userId: string) {
         // Find the active tenure for a user
-        // Logic: endDate is null OR endDate > Now
-        const tenure = await this.prisma.tenure.findFirst({
+        return this.prisma.tenure.findFirst({
             where: {
                 userId: userId,
                 status: 'ACTIVE',
@@ -32,37 +42,127 @@ export class OfficeService {
                     { endDate: { gt: new Date() } }
                 ]
             },
-            include: { office: { include: { department: true } } }
+            include: { office: { include: { departments: true } } }
         });
-        return tenure;
     }
 
-    async getHierarchy(officeId: string) {
-        const office = await this.prisma.office.findUnique({
-            where: { id: officeId },
-            include: { department: true }
-        });
-        if (!office) throw new NotFoundException('Office not found');
-        return office;
-    }
-
-    async create(data: { code: string; name: string; tier: any; departmentId?: string; vetoPower?: boolean }) {
-        return this.prisma.office.create({ data });
-    }
-
-    async update(id: string, data: any) {
-        return this.prisma.office.update({ where: { id }, data });
-    }
-
-    async delete(id: string) {
-        // Check for active tenures
-        const activeTenures = await this.prisma.tenure.count({
-            where: { officeId: id, status: 'ACTIVE' }
-        });
-        if (activeTenures > 0) {
-            throw new Error('Cannot delete office with active occupants. Reassign or end tenures first.');
+    async getHierarchy(officeId: string): Promise<OfficeResult> {
+        try {
+            const office = await this.prisma.office.findUnique({
+                where: { id: officeId },
+                include: { departments: true }
+            });
+            if (!office) return { success: false, reason: 'NOT_FOUND' };
+            return { success: true, data: office };
+        } catch (error) {
+            return { success: false, reason: 'SYSTEM_ERROR' };
         }
+    }
 
-        return this.prisma.office.delete({ where: { id } });
+    async create(data: {
+        code?: string;
+        name: string;
+        tier: any;
+        deptIds?: string[];
+        vetoPower?: boolean;
+        authorityLine?: string;
+    }) {
+        try {
+            // Singularity Validation for 1st Line
+            if (data.authorityLine === '1st' && data.deptIds && data.deptIds.length > 0) {
+                const existingFirst = await this.prisma.office.findFirst({
+                    where: {
+                        departments: { some: { id: { in: data.deptIds } } },
+                        authorityLine: '1st'
+                    }
+                });
+                if (existingFirst) {
+                    return { success: false, reason: 'SYSTEM_ERROR', message: 'A 1st Line Head already exists for one of the selected units.' };
+                }
+            }
+
+            // Code Generation Logic
+            let officeCode = data.code;
+            if (!officeCode) {
+                const slug = data.name.toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+                const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+                officeCode = `${slug}-${randomSuffix}`;
+            }
+
+            const office = await this.prisma.office.create({
+                data: {
+                    code: officeCode,
+                    name: data.name,
+                    tier: data.tier,
+                    departments: data.deptIds ? {
+                        connect: data.deptIds.map(id => ({ id }))
+                    } : undefined,
+                    vetoPower: data.vetoPower ?? false,
+                    authorityLine: data.authorityLine || '1st'
+                }
+            });
+            return { success: true, data: office };
+        } catch (error) {
+            console.error('Office Create Error', error);
+            return { success: false, reason: 'SYSTEM_ERROR' };
+        }
+    }
+
+    async update(id: string, data: any): Promise<OfficeResult> {
+        try {
+            // Singularity Validation for 1st Line
+            if (data.authorityLine === '1st' && data.deptIds && data.deptIds.length > 0) {
+                const existingFirst = await this.prisma.office.findFirst({
+                    where: {
+                        departments: { some: { id: { in: data.deptIds } } },
+                        authorityLine: '1st',
+                        NOT: { id }
+                    }
+                });
+                if (existingFirst) {
+                    return { success: false, reason: 'SYSTEM_ERROR', message: 'A 1st Line Head already exists for one of the selected units.' };
+                }
+            }
+
+            // Code Generation Logic if empty string provided
+            if (data.code === '') {
+                const slug = data.name.toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+                const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+                data.code = `${slug}-${randomSuffix}`;
+            }
+
+            const { deptIds, ...updateData } = data;
+            const office = await this.prisma.office.update({
+                where: { id },
+                data: {
+                    ...updateData,
+                    departments: deptIds ? {
+                        set: deptIds.map((id: string) => ({ id }))
+                    } : undefined
+                }
+            });
+            return { success: true, data: office };
+        } catch (error) {
+            console.error('Office Update Error', error);
+            return { success: false, reason: 'SYSTEM_ERROR' };
+        }
+    }
+
+    async delete(id: string): Promise<OfficeResult> {
+        try {
+            // Check for active tenures
+            const activeTenures = await this.prisma.tenure.count({
+                where: { officeId: id, status: 'ACTIVE' }
+            });
+            if (activeTenures > 0) {
+                return { success: false, reason: 'HAS_ACTIVE_OCCUPANTS' };
+            }
+
+            await this.prisma.office.delete({ where: { id } });
+            return { success: true };
+        } catch (error) {
+            return { success: false, reason: 'SYSTEM_ERROR' };
+        }
     }
 }
+

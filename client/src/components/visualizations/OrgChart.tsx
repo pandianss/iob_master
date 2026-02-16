@@ -13,40 +13,35 @@ interface Department {
 
 interface OrgChartProps {
     data: Department[];
+    filter: 'functional' | 'branches';
 }
 
 interface TreeNode extends Department {
     children: TreeNode[];
 }
 
-export function OrgChart({ data }: OrgChartProps) {
+export function OrgChart({ data, filter }: OrgChartProps) {
     const tree = useMemo(() => {
-        // Filter out systemic offices that sit outside hierarchy
-        const filteredData = data.filter(d => (d as any).tier !== 'TIER_0_SYSTEM');
+        // Root is strictly the Regional Office
+        const root = data.find(d => d.subType === 'RO');
+        if (!root) return null;
 
-        const idMapping = filteredData.reduce((acc, el, i) => {
-            acc[el.id] = i;
-            return acc;
-        }, {} as Record<string, number>);
+        const buildTree = (parentId: string): TreeNode[] => {
+            return data
+                .filter(d => d.parentId === parentId)
+                .filter(d => {
+                    // If we are at root, filter immediate children by the active tab
+                    if (parentId === root.id) {
+                        return filter === 'functional' ? d.subType === 'DEPT' : d.subType === 'BRANCH';
+                    }
+                    return true;
+                })
+                .map(d => ({ ...d, children: buildTree(d.id) }));
+        };
 
-        let root: TreeNode | null = null;
-        const nodes: TreeNode[] = filteredData.map(d => ({ ...d, children: [] }));
-
-        nodes.forEach(el => {
-            if (!el.parentId) {
-                root = el;
-                return;
-            }
-            const parentEl = nodes[idMapping[el.parentId]];
-            if (parentEl) {
-                parentEl.children.push(el);
-            } else {
-                // If parent not found, treat as root or orphan (put in generic root?)
-                // For now, if no parent but has parentId, it's orphan. 
-            }
-        });
-        return root;
-    }, [data]);
+        const rootNode: TreeNode = { ...root, children: buildTree(root.id) };
+        return rootNode;
+    }, [data, filter]);
 
     const renderNode = (node: TreeNode) => {
         let bgColor = 'bg-gray-100 border-gray-200 text-gray-800';
@@ -61,6 +56,9 @@ export function OrgChart({ data }: OrgChartProps) {
         } else if (node.type === 'EXECUTIVE') {
             bgColor = 'bg-green-50 border-green-200 text-green-900';
             Icon = Briefcase;
+        } else if (node.type === 'GROUP') {
+            bgColor = 'bg-gray-50 border-gray-300 text-gray-600 border-dashed';
+            Icon = node.subType === 'BRANCH_GROUP' ? Briefcase : Users;
         }
 
         return (
@@ -116,7 +114,8 @@ export function OrgChart({ data }: OrgChartProps) {
                     w-48 mb-8
                     ${node.type === 'ADMINISTRATIVE' ? 'bg-purple-50 border-purple-200 text-purple-900' :
                         node.type === 'EXECUTIVE' ? 'bg-green-50 border-green-200 text-green-900' :
-                            'bg-blue-50 border-blue-200 text-blue-900'}
+                            node.type === 'GROUP' ? 'bg-gray-50 border-gray-300 text-gray-600 border-dashed' :
+                                'bg-blue-50 border-blue-200 text-blue-900'}
                 `}>
                     <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-px h-4 bg-gray-300"
                         style={{ display: node.children.length > 0 ? 'block' : 'none' }}></div>

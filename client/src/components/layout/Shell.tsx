@@ -9,7 +9,9 @@ import {
     Bell,
     Search,
     Calendar,
-    User
+    User,
+    UploadCloud,
+    Globe
 } from 'lucide-react';
 
 export function Shell() {
@@ -17,17 +19,18 @@ export function Shell() {
     const location = useLocation();
 
     const navigation = [
-        { name: 'Decisions', href: '/decisions', icon: ShieldCheck },
+        { name: 'Region', href: '/regions', icon: Globe },
+        { name: 'The Ledger', href: '/decisions', icon: ShieldCheck },
         { name: 'Units', href: '/departments', icon: FileText },
-        { name: 'Staff', href: '/staff', icon: User }, // Added Staff link
+        { name: 'Staff', href: '/staff', icon: User },
         { name: 'Offices', href: '/offices', icon: Users },
+        { name: 'Designations', href: '/designations', icon: ShieldCheck },
         { name: 'DoA Rules', href: '/doa', icon: ShieldCheck },
         { name: 'Committees', href: '/committees', icon: Users },
         { name: 'MIS Dashboard', href: '/mis', icon: LayoutDashboard },
         { name: 'Business Snapshot', href: '/snapshot', icon: FileText },
-        { name: 'Negative Parameters', href: '/negative-parameters', icon: ShieldCheck },
-        { name: 'Parameter Mapping', href: '/parameter-mapping', icon: FileText },
         { name: 'Governance Parameters', href: '/governance/parameters', icon: ShieldCheck },
+        { name: 'Data Ingestion', href: '/data-ingestion', icon: UploadCloud },
         { name: 'Calendar & Meetings', href: '/calendar', icon: Calendar },
     ];
 

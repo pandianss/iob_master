@@ -23,11 +23,32 @@ let ReportingController = class ReportingController {
     async getInbox(identityRef) {
         return this.reportingService.getPendingApprovals(identityRef);
     }
+    async getInboxStats(identityRef) {
+        return this.reportingService.getInboxStats(identityRef);
+    }
     async getDoABreaches() {
         return this.reportingService.getDoABreachStats();
     }
     async getDeptCompliance(deptCode) {
         return this.reportingService.getComplianceScore(deptCode);
+    }
+    async getSnapshot(date) {
+        return this.reportingService.getBusinessSnapshot(date ? new Date(date) : undefined);
+    }
+    async getComparison(t, tMinus1, monthEnd, fyEnd, fyStart) {
+        return this.reportingService.getComparisonSnapshot({
+            t: new Date(t),
+            tMinus1: new Date(tMinus1),
+            monthEnd: new Date(monthEnd),
+            fyEnd: new Date(fyEnd),
+            fyStart: new Date(fyStart)
+        });
+    }
+    async saveTarget(data) {
+        return this.reportingService.saveTarget({
+            ...data,
+            targetDate: new Date(data.targetDate)
+        });
     }
 };
 exports.ReportingController = ReportingController;
@@ -38,6 +59,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], ReportingController.prototype, "getInbox", null);
+__decorate([
+    (0, common_1.Get)('inbox/:identityRef/stats'),
+    __param(0, (0, common_1.Param)('identityRef')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ReportingController.prototype, "getInboxStats", null);
 __decorate([
     (0, common_1.Get)('doa-breaches'),
     __metadata("design:type", Function),
@@ -51,6 +79,31 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], ReportingController.prototype, "getDeptCompliance", null);
+__decorate([
+    (0, common_1.Get)('business-snapshot'),
+    __param(0, (0, common_1.Query)('date')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ReportingController.prototype, "getSnapshot", null);
+__decorate([
+    (0, common_1.Get)('business-snapshot/comparison'),
+    __param(0, (0, common_1.Query)('t')),
+    __param(1, (0, common_1.Query)('tMinus1')),
+    __param(2, (0, common_1.Query)('monthEnd')),
+    __param(3, (0, common_1.Query)('fyEnd')),
+    __param(4, (0, common_1.Query)('fyStart')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, String, String]),
+    __metadata("design:returntype", Promise)
+], ReportingController.prototype, "getComparison", null);
+__decorate([
+    (0, common_1.Post)('business-snapshot/targets'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], ReportingController.prototype, "saveTarget", null);
 exports.ReportingController = ReportingController = __decorate([
     (0, common_1.Controller)('reporting'),
     __metadata("design:paramtypes", [reporting_service_1.ReportingService])
