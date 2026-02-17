@@ -1,0 +1,31 @@
+
+// --- Generic Data Ingestion ---
+
+model IngestionBatch {
+  id            String   @id @default(uuid())
+  fileType      String   // KEY_BUSINESS_PARAM, BULK_DEPOSIT, etc.
+  fileName      String
+  uploadedBy    String
+  uploadedAt    DateTime @default(now())
+  status        String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  rowCount      Int      @default(0)
+  errorLog      Json?
+  
+  records       IngestionRecord[]
+  
+  @@index([fileType, uploadedAt])
+}
+
+model IngestionRecord {
+  id            String   @id @default(uuid())
+  batchId       String
+  batch         IngestionBatch @relation(fields: [batchId], references: [id])
+  
+  rowNumber     Int
+  data          Json     // The raw CSV row
+  status        String   @default("NEW") // NEW, PROCESSED, ERROR
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([batchId])
+}

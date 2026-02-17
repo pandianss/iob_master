@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+
+        body {
+            font-family: 'Century Gothic', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        @media print {
+            body {
+                margin-bottom: 25mm;
+            }
+
+            .content {
+                page-break-after: always;
+                orphans: 3;
+                widows: 3;
+            }
+
+            .section-header {
+                page-break-after: avoid;
+                break-after: avoid;
+                /* Modern syntax */
+                margin-bottom: 10px;
+                /* Ensure visual connection */
+            }
+
+            /* Only keep blocks together if strictly necessary, not general sections */
+            .keep-together {
+                page-break-inside: avoid;
+            }
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #0056b3;
+            /* IOB Blue */
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            width: 80px;
+        }
+
+        .logo-box {
+            display: flex;
+            align-items: center;
+        }
+
+        .bank-name {
+            margin-left: 15px;
+            font-size: 18pt;
+            font-weight: bold;
+            color: #0056b3;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .office-details {
+            text-align: right;
+        }
+
+        .office-name {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .meta-row {
+            font-size: 9pt;
+            color: #666;
+        }
+
+        .separator {
+            margin: 0 8px;
+            color: #ccc;
+        }
+
+        .date-row {
+            font-size: 9pt;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            padding: 10px 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .address {
+            font-size: 8pt;
+            color: #888;
+            margin-bottom: 4px;
+        }
+
+        .system-meta {
+            font-size: 7pt;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .content {
+            font-size: 11pt;
+            text-align: justify;
+        }
+
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            opacity: 0.05;
+            font-size: 80pt;
+            color: #000;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Guilloche pattern overlay simulation */
+        .security-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(circle, #0056b3 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.03;
+            z-index: -2;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="security-overlay"></div>
+    {{#if meta.isDraft}}
+    <div class="watermark">{{motif.watermark}}</div>
+    {{/if}}
+
+    <div class="header">
+        <div class="logo-box">
+            <img src="data:image/svg+xml;base64,{{logoBase64}}" class="logo" alt="IOB" />
+            <div class="bank-name">{{motif.header.bankName}}</div>
+        </div>
+        <div class="office-details">
+            <div class="office-name">{{motif.header.officeName}}</div>
+            <div class="meta-row">
+                <span>{{motif.header.officePhone}}</span>
+                <span class="separator">|</span>
+                <span>{{motif.header.officeEmail}}</span>
+            </div>
+            <div class="date-row">Date: {{motif.header.generatedAt}}</div>
+        </div>
+    </div>
+
+    <div class="content">
+        {{{body}}}
+    </div>
+
+    <div class="footer">
+        <div class="address">{{motif.footer.address}}</div>
+        <div class="system-meta">
+            {{motif.footer.disclaimer}} | Ref: {{refNumber}} | Page <span class="pageNumber"></span>
+        </div>
+    </div>
+</body>
+
+</html>
